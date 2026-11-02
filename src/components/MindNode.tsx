@@ -1,11 +1,13 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { motion } from 'motion/react';
-import { AlertCircle, Loader2, Plus, Sparkles } from 'lucide-react';
+import { AlertCircle, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import clsx from 'clsx';
-import type { KNode, Side } from '../types';
+import { expandNode } from '../actions';
+import { useStore } from '../store';
+import type { KNode, Mastery, Side } from '../types';
 import { paintOf } from '../theme';
 import { NODE_W, ROOT_W } from '../layout';
 
@@ -15,6 +17,7 @@ export type MindNodeData = {
   selected: boolean;
   onPath: boolean;
   hiddenCount: number;
+  mapId: string;
   onToggle: (id: string) => void;
   onPeek: (id: string) => void;
   onExpand: (id: string) => void;
@@ -66,13 +69,139 @@ function CardCopy({ summary, detail, light }: { summary?: string; detail?: strin
   );
 }
 
+function NodeTools({ node, mapId, hiddenCount, onPeek, onExpand, light }: Pick<MindNodeData, 'node' | 'mapId' | 'hiddenCount' | 'onPeek' | 'onExpand'> & { light?: boolean }) {
+  const addRequest = useStore((s) => s.addRequest);
+  const addUserChild = useStore((s) => s.addUserChild);
+  const deleteNode = useStore((s) => s.deleteNode);
+  const setMastery = useStore((s) => s.setMastery);
+  const startCompare = useStore((s) => s.startCompare);
+  const comparePick = useStore((s) => s.comparePick);
+  const requestFocus = useStore((s) => s.requestFocus);
+  const [composing, setComposing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const loading = node.status === 'loading';
+  const isRoot = node.parentId === null;
+
+  useEffect(() => {
+    if (addRequest?.mapId === mapId && addRequest.nodeId === node.id) setComposing(true);
+  }, [addRequest, mapId, node.id]);
+
+  const stop = (event: { stopPropagation: () => void }) => event.stopPropagation();
+  const chip = light
+    ? 'border-white/20 bg-white/10 text-white/85 hover:bg-white/20'
+    : 'border-line bg-paper text-muted hover:text-ink';
+
+  const mark = (mastery: Mastery) => setMastery(mapId, node.id, mastery);
+
+  return (
+    <div className="nodrag nopan mt-3" onClick={stop} onDoubleClick={stop}>
+      <div className="flex flex-wrap gap-1">
+        {!loading && !node.expanded && (
+          <button type="button" onClick={() => onExpand(node.id)} className={clsx('inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-[12px]', chip)}>
+            <Plus className="size-3" /> {node.status === 'error' ? '再试一次' : '散开'}
+          </button>
+        )}
+        {hiddenCount > 0 && (
+          <button type="button" onClick={() => onPeek(node.id)} className={clsx('inline-flex h-7 items-center rounded-full border px-2.5 text-[12px]', chip)}>
+            下一批 {hiddenCount}
+          </button>
+        )}
+        {node.expanded && !loading && (
+          <button type="button" onClick={() => void expandNode(mapId, node.id, { more: true })} className={clsx('inline-flex h-7 items-center rounded-full border px-2.5 text-[12px]', chip)}>
+            再找一批
+          </button>
+        )}
+        {node.expanded && !loading && (
+          <button
+            type="button"
+            onClick={() => {
+              if (node.childIds.length === 0 || confirm('重新生成会换掉现在这些相关信息，继续吗？')) {
+                void expandNode(mapId, node.id, { replace: true });
+              }
+            }}
+            className={clsx('inline-flex h-7 items-center gap-1 rounded-full border px-2.5 text-[12px]', chip)}
+          >
+            <RefreshCw className="size-3" /> 重来
+          </button>
+        )}
+        <button type="button" onClick={() => setComposing((open) => !open)} className={clsx('inline-flex h-7 items-center rounded-full border px-2.5 text-[12px]', chip)}>
+          我写
+        </button>
+        <button
+          type="button"
+          onClick={() => startCompare(node.id)}
+          className={clsx('inline-flex h-7 items-center rounded-full border px-2.5 text-[12px]', chip, comparePick === node.id && 'border-onion')}
+        >
+          {comparePick === node.id ? '再点一个' : '对比'}
+        </button>
+        {(
+          [
+            ['got', '懂了'],
+            ['fuzzy', '模糊'],
+            ['lost', '不会'],
+          ] as const
+        ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => mark(key)}
+              className={clsx('inline-flex h-7 items-center rounded-full border px-2 text-[12px]', node.mastery === key ? 'border-transparent bg-inverse text-on-inverse' : chip)}
+            >
+              {label}
+            </button>
+          ))}
+        {!isRoot && (
+          <button
+            type="button"
+            title="删除这个分支"
+            onClick={() => {
+              if (confirm(`删除「${node.title}」和它下面的分支？`)) deleteNode(mapId, node.id);
+            }}
+            className={clsx('inline-flex h-7 items-center rounded-full border px-2 text-[12px]', chip)}
+          >
+            <Trash2 className="size-3" />
+          </button>
+        )}
+      </div>
+      {composing && (
+        <form
+          className="mt-2 flex gap-1"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const title = draft.trim();
+            if (!title) return;
+            const created = addUserChild(mapId, node.id, { title, summary: '' });
+            setDraft('');
+            setComposing(false);
+            if (created) requestFocus(mapId, [created]);
+          }}
+        >
+          <input
+            autoFocus
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') setComposing(false);
+            }}
+            placeholder="写一条你自己的相关信息"
+            className={clsx(
+              'h-8 min-w-0 flex-1 rounded-lg border px-2 text-[12.5px] outline-none',
+              light ? 'border-white/20 bg-white/10 text-white placeholder:text-white/40' : 'border-[#1d4ed8] bg-card text-ink',
+            )}
+          />
+        </form>
+      )}
+    </div>
+  );
+}
+
 function weakRing(node: KNode): string | undefined {
   if (node.needsReview || node.mastery === 'lost') return '#e11d48';
   if (node.mastery === 'fuzzy') return '#d97706';
   return undefined;
 }
 
-function RootCard({ node, selected, hiddenCount, onPeek, onExpand }: MindNodeData) {
+function RootCard({ node, selected, hiddenCount, mapId, onPeek, onExpand }: MindNodeData) {
   const loading = node.status === 'loading';
   const ring = weakRing(node);
   return (
@@ -103,38 +232,13 @@ function RootCard({ node, selected, hiddenCount, onPeek, onExpand }: MindNodeDat
           AI 正在拆解这个知识点…
         </div>
       )}
-      {hiddenCount > 0 && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPeek(node.id);
-          }}
-          className="mt-3 inline-flex rounded-full bg-white/10 px-2.5 py-1 text-[12px] font-medium text-white/80 hover:bg-white/15"
-        >
-          还有 {hiddenCount} 个
-        </button>
-      )}
-      {!loading && !node.expanded && (
-        <button
-          type="button"
-          title="散开这个知识点"
-          onClick={(e) => {
-            e.stopPropagation();
-            onExpand(node.id);
-          }}
-          className="mt-3 inline-flex items-center gap-1 rounded-full bg-white/15 px-3 py-1 text-[12px] font-medium text-white hover:bg-white/25"
-        >
-          <Plus className="size-3.5" />
-          {node.status === 'error' ? '再试一次' : '散开'}
-        </button>
-      )}
+      <NodeTools node={node} mapId={mapId} hiddenCount={hiddenCount} onPeek={onPeek} onExpand={onExpand} light />
       <Handles />
     </motion.div>
   );
 }
 
-function ChildCard({ node, side, selected, onPath, hiddenCount, onToggle, onPeek, onExpand }: MindNodeData) {
+function ChildCard({ node, side, selected, onPath, hiddenCount, mapId, onToggle, onPeek, onExpand }: MindNodeData) {
   const c = paintOf(node);
   const ring = weakRing(node);
   const mine = node.origin === 'user';
@@ -189,30 +293,11 @@ function ChildCard({ node, side, selected, onPath, hiddenCount, onToggle, onPeek
         </div>
       ) : failed ? (
         <div className="mt-2 flex items-center gap-1.5 text-[11.5px] font-medium text-rose-600">
-          <AlertCircle className="size-3" /> 散开失败，点击重试
-        </div>
-      ) : !node.expanded ? (
-        <div
-          className="mt-2 flex h-0 items-center gap-1 overflow-hidden text-[11.5px] font-medium opacity-0 transition-all duration-200 group-hover:h-4 group-hover:opacity-100"
-          style={{ color: c.text }}
-        >
-          <Sparkles className="size-3" /> 点加号继续散开
+          <AlertCircle className="size-3" /> 散开失败，点「再试一次」
         </div>
       ) : null}
 
-      {hiddenCount > 0 && (
-        <button
-          type="button"
-          title="这些是按价值排在后面的，点开查看"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPeek(node.id);
-          }}
-          className="mt-2 inline-flex items-center rounded-full bg-paper px-2 py-0.5 text-[11px] font-medium text-muted hover:text-ink"
-        >
-          还有 {hiddenCount} 个
-        </button>
-      )}
+      <NodeTools node={node} mapId={mapId} hiddenCount={hiddenCount} onPeek={onPeek} onExpand={onExpand} />
 
       {count > 0 && (
         <button
@@ -233,24 +318,6 @@ function ChildCard({ node, side, selected, onPath, hiddenCount, onToggle, onPeek
           }
         >
           {node.collapsed ? count : <span className="block h-[2px] w-2 rounded bg-current" />}
-        </button>
-      )}
-
-      {!node.expanded && !loading && (
-        <button
-          type="button"
-          title={failed ? '散开失败，再试一次' : '散开这个知识点'}
-          onClick={(e) => {
-            e.stopPropagation();
-            onExpand(node.id);
-          }}
-          className={clsx(
-            'absolute top-1/2 z-10 flex size-[22px] -translate-y-1/2 items-center justify-center rounded-full border bg-card shadow-sm transition hover:scale-110',
-            outer === 'right' ? '-right-[11px]' : '-left-[11px]',
-          )}
-          style={{ borderColor: c.stroke, color: c.stroke }}
-        >
-          <Plus className="size-3" />
         </button>
       )}
 

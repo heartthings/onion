@@ -131,23 +131,22 @@ function parseLooseJSON(raw: string): unknown {
 /** 一次拆解最多收下的子节点。界面只先画出其中价值最高的若干个。 */
 export const POOL_SIZE = 12;
 
-const EXPAND_SYSTEM = `你是一位擅长构建知识地图的导师。用户正在用思维导图学习，你要把指定节点拆成下一级子知识点，并按学习价值排序。
+const EXPAND_SYSTEM = `你在画一张知识地图。用户点开一个知识点，你要散开的是围绕它的相关信息，按价值排序，让人看清这个知识点的边界在哪里。
 
 只输出 JSON，不要任何额外文字。格式：
-{"summary":"对当前节点的一句话概括","children":[{"title":"子知识点名称","summary":"一句话说明","value":85}]}
+{"summary":"一句话：它是什么，以及它到哪里就不再是它","children":[{"title":"一条相关信息的名字","summary":"它和当前节点是什么关系，边界画在哪里","value":85}]}
 
 规则：
-1. title 简洁，2-14 个字，名词性短语，不带序号和标点。
-2. summary 20-50 字，能独立读懂，说清它是什么、为什么对理解当前节点重要。
-3. 子知识点互不重叠，只拆当前节点，不要跳回上级话题。结合整条知识路径理解语境。
-4. value 是 0 到 100 的整数，表示「不先弄懂它，就很难真正理解当前节点」的程度。
-   - 80 以上：定义、组成、核心机制这类必经之路。
-   - 50–79：能明显加深理解的例子、边界、易混概念、典型应用。
-   - 50 以下：有价值但可以后学的延伸、花絮、冷僻分支。
-5. children 必须按 value 从高到低排列。最该先学的放第一个。
-6. 尽量把有学习价值的方向列全，上限 12 个。方向确实不多时可以少给。不要为了凑数编造，不要把同一个概念换个说法再写一遍。
-7. 你列不完世界上所有相关知识。目标是：一个认真的初学者沿着前几个节点走，就能抓住这个知识点；其余是值得之后再看的。
-8. 使用简体中文，专有名词可保留原文。`;
+1. 每个 child 是一条独立的相关信息：一个相邻概念、一个前提、一个后果、一个成立条件、一个易混对象、一个它到此为止的限制，或一块紧挨着的领域。title 用这个信息自己的名字，2-18 个字，名词或判断，不带序号。
+2. 不要把同一个知识点拆成课文栏目。禁止用这些当 title：核心定义、基本含义、关键要素、关键组成、具体例子、举个例子、常见误区、内在机制、运作原理、关键要点、一句话理解、进一步探索、实践方法、历史与起源、典型应用。例子、要素、误区如果值得说，必须写成具体的那条信息，而不是栏目名。
+3. summary 25-70 字。写清这条信息和当前节点的关系：它划出了哪一段边界，或者它为什么紧挨着。
+4. 子节点互不重叠。结合整条知识路径理解语境，不要跳回去重复上级节点。
+5. value 是 0 到 100 的整数，表示这条信息对看清边界有多关键。
+   - 80 以上：不看它，就会把边界画错。最近的邻居、它成立的条件、它明确不是什么。
+   - 50–79：能把版图补完整的相关事实、后果、相邻领域。
+   - 50 以下：更远、但仍相关的信息。
+6. children 按 value 从高到低。尽量把划边界所需要的相关信息列全，上限 12 条。不够 12 条就少给。不要换个说法重复，不要为了凑数编造。
+7. 使用简体中文，专有名词可保留原文。`;
 
 export interface ExpandResult {
   summary?: string;
@@ -169,7 +168,7 @@ export async function generateChildren(
     `当前要拆解的节点：${node.title}${node.summary ? `（${node.summary}）` : ''}`,
     existing.length ? `它已有这些子节点，不要重复：${existing.join('、')}` : '',
     hint ? `用户希望这次重点覆盖的方向：${hint}。仍然要按价值排序，并保留这个方向之外、同样重要的节点。` : '',
-    `请给出最多 ${POOL_SIZE} 个子知识点，按 value 从高到低排列。`,
+    `请给出最多 ${POOL_SIZE} 条相关信息，按 value 从高到低排列。每条都要能帮人看清「${node.title}」的边界，不要输出课文栏目。`,
     `界面只会先展示价值最高的 ${count} 个，其余收进「更多」，所以不要只写 ${count} 个。`,
   ]
     .filter(Boolean)
@@ -189,7 +188,7 @@ export async function generateChildren(
       const children: ChildDraft[] = [];
       for (const item of list as Array<Record<string, unknown>>) {
         const title = String(item?.title ?? '').trim().replace(/^[\d.、\s]+/, '');
-        if (!title || seen.has(title)) continue;
+        if (!title || seen.has(title) || OUTLINE_TITLE.test(title)) continue;
         seen.add(title);
         const rawValue = Number(item?.value);
         const value = Number.isFinite(rawValue) ? Math.max(0, Math.min(100, Math.round(rawValue))) : 0;
@@ -206,18 +205,18 @@ export async function generateChildren(
   throw new Error('模型返回的内容无法解析，请重试或换一个模型');
 }
 
-const EXPLAIN_SYSTEM = `你是一位耐心、严谨的导师，正在帮助学生理解思维导图中的一个知识点。请输出 Markdown，结构如下（不要使用一级标题）：
+const EXPLAIN_SYSTEM = `你在讲解思维导图上的一个知识点。目标不是把它拆成「定义、要素、例子、误区」几个栏目，而是讲清它是什么，以及它的边界画在哪里。请输出 Markdown，不要使用一级标题，结构固定为：
 
-## 一句话理解
-## 核心讲解
-## 关键要点
-（3-5 条列表）
-## 举个例子
-## 常见误区
+## 它是什么
+用两三句话写它实际主张的内容。
+## 边界在哪里
+写它包含到哪里、从哪里开始就不再是它。点出紧挨着、但不是它的信息。
+## 相关信息
+3-6 条列表。每一条是一条独立的相关信息，用它自己的名字开头，不要用「例子」「要素」「误区」当条目标题。
 ## 继续追问
-（给出 3 个值得继续深入的问题，用列表）
+3 条列表。每条是一个可以再散开的具体问题或相邻知识点，不要写成「举个例子」「有哪些误区」。
 
-要求：结合知识路径理解语境；表述准确，不确定的地方明确说明；可以用公式（行内代码表示）和对比表格；全文 500-900 字，简体中文。`;
+要求：结合知识路径理解语境；不确定就直说；可以用公式（行内代码）和对比。全文 400-800 字，简体中文。`;
 
 export async function* explainNode(s: Settings, path: KNode[], signal?: AbortSignal): AsyncGenerator<string> {
   if (!isConfigured(s)) {
@@ -318,35 +317,46 @@ function demoQuiz(title: string): QuizQuestion[] {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-const DEMO_ROOT = ['核心定义', '历史与起源', '关键组成', '运作原理', '典型应用', '局限与争议', '相关概念', '前沿进展'];
-const DEMO_DEEP = ['基本含义', '关键要素', '具体例子', '内在机制', '常见误区', '与其他概念的联系', '进一步探索', '实践方法'];
+const OUTLINE_TITLE = /^(核心定义|基本含义|基本概念|关键要素|关键组成|关键要点|具体例子|举个例子|常见误区|内在机制|运作原理|一句话理解|核心讲解|进一步探索|实践方法|历史与起源|典型应用|相关概念|前沿进展)$/;
+
+function demoRelated(name: string): string[] {
+  const short = name.length > 8 ? `${name.slice(0, 8)}…` : name;
+  return [
+    `${short}成立的条件`,
+    `${short}到此为止的地方`,
+    `紧挨着${short}、但不是它`,
+    `${short}依赖的前提`,
+    `${short}带来的后果`,
+    `常被当成${short}的东西`,
+    `${short}走不通的情况`,
+    `${short}旁边的另一条路`,
+  ];
+}
 
 async function demoChildren(path: KNode[], existing: string[], count: number, hint?: string): Promise<ExpandResult> {
   await sleep(650 + Math.random() * 500);
   const node = path[path.length - 1];
-  const pool = node.parentId === null ? DEMO_ROOT : DEMO_DEEP;
-  const name = node.title.length > 8 ? node.title.slice(0, 8) + '…' : node.title;
+  const pool = demoRelated(node.title);
   const children: ChildDraft[] = [];
   let value = 92;
-  for (const t of pool) {
-    const title = node.parentId === null ? t : `${name}的${t}`;
+  for (const title of pool) {
     if (existing.includes(title)) continue;
     children.push({
       title: hint ? `${title}（${hint}）` : title,
-      summary: `演示数据：配置模型后，这里会是 AI 对「${node.title}」这一方面的真实解析。`,
+      summary: `演示数据：这是围着「${node.title}」的一条相关信息，用来标出它的边界。配置模型后会换成真实内容。`,
       value,
     });
     value -= 7;
   }
   return {
-    summary: node.summary ? undefined : '演示模式下的根知识点。配置模型后会得到真实概括。',
+    summary: node.summary ? undefined : '演示模式。配置模型后，这里会写清它是什么，以及它到哪里就不再是它。',
     children: children.map((child, index) => ({ ...child, hidden: index >= count })),
   };
 }
 
 async function* demoExplain(path: KNode[]): AsyncGenerator<string> {
   const node = path[path.length - 1];
-  const text = `## 一句话理解\n\n这是**演示模式**下「${node.title}」的占位讲解。\n\n## 核心讲解\n\n在左下角或侧栏底部打开「模型设置」，填入任意 OpenAI 兼容接口的 Key（例如 DeepSeek、通义千问、Kimi），这里就会流式生成真实的深度讲解。\n\n## 关键要点\n\n- 知识路径：${path.map((n) => n.title).join(' → ')}\n- 讲解会结合整条路径理解语境\n- 生成后自动保存在本机\n\n## 继续追问\n\n- 它和相邻概念的区别是什么？\n- 它在什么情况下不成立？\n- 有哪些经典例子？\n`;
+  const text = `## 它是什么\n\n这是**演示模式**下「${node.title}」的占位说明。配置模型后，这里会写它实际主张的内容。\n\n## 边界在哪里\n\n它的边界要由旁边那些相关信息来画，而不是再拆成定义、要素和例子。路径：${path.map((n) => n.title).join(' → ')}。\n\n## 相关信息\n\n- 它成立时依赖什么\n- 从哪里开始就不再是它\n- 哪条信息紧挨着它、但属于另一件事\n\n## 继续追问\n\n- ${node.title}成立还需要哪一个前提？\n- 哪一块知识和它挨着、却已经越界？\n- 它往外走一步，首先碰到什么？\n`;
   for (let i = 0; i < text.length; i += 6) {
     await sleep(16);
     yield text.slice(i, i + 6);

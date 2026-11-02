@@ -340,7 +340,7 @@ export const useStore = create<State>()((set, get) => ({
     set((s) => ({ reviews: s.reviews.map((card) => (card.id === id ? gradeCard(card, grade) : card)) })),
 
   setReviewOpen: (open) => set({ reviewOpen: open }),
-  startCompare: (nodeId) => set({ comparePick: nodeId, comparePair: null, selectedId: nodeId }),
+  startCompare: (nodeId) => set({ comparePick: nodeId, comparePair: null }),
   cancelCompare: () => set({ comparePick: null, comparePair: null }),
   finishCompare: (nodeId) => {
     const pick = get().comparePick;
@@ -394,7 +394,7 @@ export const useStore = create<State>()((set, get) => ({
   requestFocus: (mapId, ids) => set({ focus: { mapId, ids, at: Date.now() } }),
   setStreaming: (id) => set({ streamingId: id }),
   setHelpOpen: (open) => set({ helpOpen: open }),
-  askAddChild: (mapId, nodeId) => set({ selectedId: nodeId, addRequest: { mapId, nodeId, at: Date.now() } }),
+  askAddChild: (mapId, nodeId) => set({ addRequest: { mapId, nodeId, at: Date.now() } }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setSettingsOpen: (open) => set({ settingsOpen: open }),
   updateSettings: (patch) => set({ settings: { ...get().settings, ...patch } }),

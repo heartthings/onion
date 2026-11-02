@@ -7,9 +7,9 @@ import { useStore } from '../store';
 const KEYS: { key: string; label: string }[] = [
   { key: '↑ ↓', label: '在同一级节点之间移动' },
   { key: '← →', label: '走向父节点，或走向第一个子节点' },
-  { key: 'Enter', label: '散开当前节点；已经散开过就打开下一批。点卡片本身不会散开' },
+  { key: 'Enter', label: '散开当前节点；已经散开过就打开下一批。点卡片本身只打开侧栏' },
   { key: 'Esc', label: '关闭详情、设置或这个说明' },
-  { key: 'N', label: '在当前节点下写一个自己的节点' },
+  { key: 'N', label: '在当前卡片上写一条自己的相关信息' },
   { key: 'F', label: '收藏或取消收藏' },
   { key: 'R', label: '打开今天要复习' },
   { key: '?', label: '打开或关闭快捷键说明' },

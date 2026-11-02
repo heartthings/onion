@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes } from 'react';
 import { Moon, Sun } from 'lucide-react';
 
-export const GITHUB_URL = 'https://github.com/heartthings';
+export const GITHUB_URL = 'https://github.com/heartthings/onion';
 
 export function GithubMark({ className }: { className?: string }) {
   return (
@@ -17,7 +17,7 @@ export function GithubLink() {
       href={GITHUB_URL}
       target="_blank"
       rel="noreferrer"
-      title="有心之物的 GitHub"
+      title="洋葱的 GitHub"
       className="flex size-8 items-center justify-center rounded-xl text-muted transition hover:bg-ink/5 hover:text-ink"
     >
       <GithubMark className="size-4" />
@@ -40,11 +40,15 @@ export function IconButton({ className, ...props }: ButtonHTMLAttributes<HTMLBut
   );
 }
 
+function brand(file: string) {
+  return `${import.meta.env.BASE_URL}brand/${file}`;
+}
+
 export function Logo({ size = 28 }: { size?: number }) {
   const dark = useStore((s) => s.settings.theme === 'dark');
   return (
     <img
-      src={dark ? '/brand/logo-mark.svg' : '/brand/logo-on-light.svg'}
+      src={dark ? brand('logo-mark.svg') : brand('logo-on-light.svg')}
       width={size}
       height={size}
       alt="洋葱"

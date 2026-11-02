@@ -41,7 +41,7 @@ export function cardHeight(node: KNode, root = false): number {
     height += 16 + countLines(plain, inner, 12.5) * 20;
   }
   if (!node.expanded) height += 28;
-  return height + 20;
+  return height + 78;
 }
 
 /** 根居中，一级子节点分列左右两侧，各侧向外水平展开（XMind 式思维导图）。坐标为节点中心点。 */

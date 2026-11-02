@@ -12,7 +12,7 @@ import {
   type NodeChange,
 } from '@xyflow/react';
 import { getPath, useStore } from '../store';
-import { expandNode } from '../actions';
+import { expandNode, openNext } from '../actions';
 import { layoutMap, structureSignature, type Placed } from '../layout';
 import { subtreeHealth } from '../srs';
 import { paintOf } from '../theme';
@@ -93,7 +93,7 @@ export function MindCanvas({ mapId }: { mapId: string }) {
   }, [hoverId, selectedId, map]);
 
   const onToggle = useCallback((id: string) => toggleCollapse(mapId, id), [mapId, toggleCollapse]);
-  const onPeek = useCallback((id: string) => selectNode(id), [selectNode]);
+  const onPeek = useCallback((id: string) => openNext(mapId, id), [mapId]);
   const onExpand = useCallback(
     (id: string) => {
       const node = mapRef.current.nodes[id];
@@ -136,6 +136,7 @@ export function MindCanvas({ mapId }: { mapId: string }) {
             selected: id === selectedId,
             onPath: pathIds.has(id),
             hiddenCount: map.nodes[id].childIds.filter((cid) => map.nodes[cid]?.hidden).length,
+            mapId,
             onToggle,
             onPeek,
             onExpand,
@@ -271,7 +272,7 @@ export function MindCanvas({ mapId }: { mapId: string }) {
 
       {Object.keys(map.nodes).length <= 8 && (
         <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full border border-line bg-card/70 px-4 py-1.5 text-[12px] text-muted backdrop-blur">
-          点加号散开 · Enter 也可以 · N 自己写 · ? 快捷键
+          点「散开」或「下一批」· Enter 也可以 · N 自己写 · ? 快捷键
         </div>
       )}
     </div>

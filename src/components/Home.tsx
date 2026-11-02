@@ -145,7 +145,7 @@ export function Home() {
             把一个知识点，散开成一张地图
           </h1>
           <p className="mt-3 max-w-[520px] text-[14.5px] leading-relaxed text-muted">
-            输入任何你想弄懂的概念，AI 会把它拆成若干子知识点。点卡片只是打开它，点旁边的加号，它才继续向下散开。
+            输入一个知识点，AI 会按价值散开周围的相关信息，把边界画出来。点卡片只是打开它，点旁边的加号，它才继续散开。
           </p>
           <a
             href={GITHUB_URL}
@@ -154,7 +154,7 @@ export function Home() {
             className="mt-5 inline-flex items-center gap-2 rounded-full border border-line bg-card px-3.5 py-1.5 text-[13px] text-muted transition hover:text-ink"
           >
             <GithubMark className="size-4" />
-            GitHub · heartthings
+            GitHub · onion
           </a>
         </div>
 

@@ -26,7 +26,7 @@ You can click around before adding a model key. That is demo mode: the nodes are
 ## How to study
 
 1. Start with one specific concept. Smaller topics make better maps.
-2. The model prepares up to 12 directions and ranks them. Settings decide how many you see first. The rest sit behind "还有 N 个". Each visible node shows the full summary on the card.
+2. The model prepares up to 12 pieces of related information and ranks them by how clearly they mark the boundary. It does not split the topic into "definition, elements, examples". Settings decide how many you see first. The rest sit behind "还有 N 个". Each visible node shows the full summary on the card.
 3. Tap a card to open it. Tap the plus when you want the next layer.
 4. Generate the explanation and it stays on the card, not only inside the side panel. Select a sentence there to highlight it. The star saves the node.
 5. The follow-up questions at the end of an explanation are buttons. Tap one and it grows beside the current node, then fans out.
@@ -69,7 +69,7 @@ If this is useful, a coffee is enough. ¥25, WeChat or Alipay.
 
 ## Open source, commercial use is email-only
 
-Home: [github.com/heartthings](https://github.com/heartthings). This repo: [github.com/heartthings/onion](https://github.com/heartthings/onion).
+[github.com/heartthings/onion](https://github.com/heartthings/onion)
 
 Personal study, research, and tinkering: go ahead.
 

@@ -38,7 +38,7 @@ export function QuizBox({ mapId, nodeId }: { mapId: string; nodeId: string }) {
         type="button"
         disabled={busy}
         onClick={() => void start()}
-        className="mt-4 flex w-full items-center justify-between rounded-2xl border border-dashed border-line px-4 py-3 text-left text-[13px] text-muted transition hover:border-onion/50 hover:text-ink disabled:opacity-60"
+        className="flex w-full items-center justify-between rounded-2xl border border-dashed border-line px-4 py-3 text-left text-[13px] text-muted transition hover:border-onion/50 hover:text-ink disabled:opacity-60"
       >
         <span>就地出几道选择题</span>
         {busy ? <Loader2 className="size-4 animate-spin" /> : <span className="text-[12px] text-faint">答错会标成还要再看</span>}
