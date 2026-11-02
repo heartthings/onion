@@ -2,7 +2,18 @@ import { create } from 'zustand';
 import { ensureReview, gradeCard, nodeReview, type Grade } from './srs';
 import type { ChildDraft, Highlight, KMap, KNode, Mastery, ReviewCard, Settings } from './types';
 
-const uid = () => crypto.randomUUID();
+/** UUID v4. `randomUUID` only exists on https and localhost, so plain http falls back to `getRandomValues`. */
+function uid() {
+  const webCrypto = globalThis.crypto;
+  if (typeof webCrypto?.randomUUID === 'function') return webCrypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  if (typeof webCrypto?.getRandomValues === 'function') webCrypto.getRandomValues(bytes);
+  else for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 export const DEFAULT_SETTINGS: Settings = {
   providerId: 'deepseek',
