@@ -1,0 +1,226 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --font-sans: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-serif: "Songti SC", "Noto Serif SC", "Source Han Serif SC", "STSong", Georgia, serif;
+  --color-paper: #f6f5f1;
+  --color-card: #ffffff;
+  --color-sunken: #fbfaf7;
+  --color-ink: #1c1f26;
+  --color-muted: #5c6570;
+  --color-faint: #8b939e;
+  --color-line: rgba(28, 31, 38, 0.08);
+  --color-inverse: #1c1f26;
+  --color-on-inverse: #ffffff;
+  --color-onion: #e0913f;
+  --color-onion-deep: #b8661c;
+}
+
+/* 深色：近黑画布、浮起的深色卡片、绿色主操作，接近参考图的阅读感 */
+html[data-theme="dark"] {
+  --color-paper: #0e0e10;
+  --color-card: #1b1b1e;
+  --color-sunken: #141416;
+  --color-ink: #f3f2ee;
+  --color-muted: #b4b4bc;
+  --color-faint: #8a8a93;
+  --color-line: rgba(255, 255, 255, 0.09);
+  --color-inverse: #3ecf8e;
+  --color-on-inverse: #042818;
+  --color-onion: #f0a35a;
+  --color-onion-deep: #f0a35a;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: rgba(224, 145, 63, 0.22);
+}
+
+.paper-grid {
+  background-color: var(--color-paper);
+  background-image: radial-gradient(var(--dot, rgba(28, 31, 38, 0.09)) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+html[data-theme="dark"] {
+  --dot: rgba(255, 255, 255, 0.08);
+}
+
+.home-glow {
+  background: radial-gradient(60% 60% at 50% 0%, rgba(224, 145, 63, 0.16), transparent);
+}
+
+html[data-theme="dark"] .demo-banner {
+  background: rgba(120, 78, 16, 0.28);
+  border-color: rgba(240, 176, 64, 0.28);
+  color: #f6d7a2;
+}
+
+html[data-theme="dark"] .home-glow {
+  background: radial-gradient(50% 42% at 50% 0%, rgba(62, 207, 142, 0.14), transparent);
+}
+
+.root-card {
+  background:
+    radial-gradient(120% 80% at 100% 0%, rgba(224, 145, 63, 0.28), transparent 46%),
+    #1a1c22;
+  color: #fff;
+}
+
+html[data-theme="dark"] .root-card {
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(62, 207, 142, 0.16), transparent 42%),
+    #242428;
+  box-shadow: 0 18px 40px -22px rgba(0, 0, 0, 0.8);
+}
+
+mark.hl {
+  background: #ffe7a3;
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+html[data-theme="dark"] mark.hl {
+  background: rgba(240, 176, 64, 0.32);
+  color: #fff6df;
+}
+
+/* ---------- React Flow ---------- */
+.react-flow {
+  --xy-background-color: transparent;
+}
+
+.react-flow__node-mind {
+  cursor: pointer;
+}
+
+.react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+}
+
+.react-flow__edge-path {
+  transition: stroke-opacity 0.25s ease, stroke-width 0.25s ease;
+}
+
+.react-flow__attribution {
+  background: transparent;
+  opacity: 0.35;
+}
+
+.react-flow__controls {
+  box-shadow: none;
+}
+
+.react-flow__controls-button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-bottom: 1px solid var(--color-line);
+  background: transparent;
+  color: var(--color-muted);
+  fill: var(--color-muted);
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(28, 31, 38, 0.05);
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+
+.react-flow__minimap {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+/* ---------- 加载微光 ---------- */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.75) 50%, transparent 80%);
+  animation: shimmer 1.3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.shimmer-dark::after {
+  background: linear-gradient(100deg, transparent 20%, rgba(255, 255, 255, 0.12) 50%, transparent 80%);
+}
+
+/* ---------- 滚动条 ---------- */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(28, 31, 38, 0.15) transparent;
+}
+
+.thin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: rgba(28, 31, 38, 0.15);
+  border-radius: 999px;
+}
+
+/* ---------- 讲解排版 ---------- */
+.prose-onion h2 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.02rem;
+  margin-top: 1.6em;
+  margin-bottom: 0.55em;
+  padding-left: 0.65em;
+  border-left: 3px solid var(--color-onion);
+  line-height: 1.35;
+}
+
+.prose-onion h2:first-child {
+  margin-top: 0.2em;
+}
+
+html[data-theme="dark"] .prose-onion {
+  --tw-prose-body: #d8d4cc;
+  --tw-prose-headings: #f4f1ea;
+  --tw-prose-bold: #f4f1ea;
+  --tw-prose-bullets: #9a9aa2;
+  --tw-prose-counters: #9a9aa2;
+  --tw-prose-quotes: #d8d4cc;
+  --tw-prose-quote-borders: rgba(240, 163, 90, 0.5);
+  --tw-prose-code: #f0a35a;
+  --tw-prose-hr: rgba(255, 255, 255, 0.1);
+  --tw-prose-th-borders: rgba(255, 255, 255, 0.12);
+  --tw-prose-td-borders: rgba(255, 255, 255, 0.08);
+}
