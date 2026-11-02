@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import clsx from 'clsx';
 import { useReactFlow } from '@xyflow/react';
 import { ChevronsDownUp, ChevronsUpDown, Download, Keyboard, Maximize, PanelLeftOpen } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,20 +31,20 @@ export function CanvasTopBar({ mapId }: { mapId: string }) {
   };
 
   return (
-    <div className="pointer-events-none absolute inset-x-4 top-4 z-10 flex items-start justify-between gap-3">
-      <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-line bg-card/85 py-1.5 pr-4 pl-1.5 shadow-[0_8px_24px_-16px_rgba(28,31,38,0.3)] backdrop-blur-xl">
+    <div className="pointer-events-none absolute inset-x-3 top-3 z-10 flex flex-col gap-2 sm:inset-x-4 sm:top-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="pointer-events-auto flex min-w-0 items-center gap-2 rounded-2xl border border-line bg-card/85 py-1.5 pr-3 pl-1.5 shadow-[0_8px_24px_-16px_rgba(28,31,38,0.3)] backdrop-blur-xl sm:pr-4">
         {!sidebarOpen && (
           <IconButton title="打开侧栏" onClick={() => setSidebarOpen(true)}>
             <PanelLeftOpen className="size-4" />
           </IconButton>
         )}
-        <div className={sidebarOpen ? 'pl-2.5' : ''}>
+        <div className={clsx('min-w-0 flex-1', sidebarOpen && 'pl-2.5')}>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={commit}
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
-            className="w-[min(36vw,360px)] bg-transparent font-serif text-[16px] font-semibold text-ink outline-none"
+            className="w-full bg-transparent font-serif text-[16px] font-semibold text-ink outline-none sm:w-[min(36vw,360px)]"
           />
           <div className="text-[11.5px] text-faint">
             {nodes.length} 个知识点 · {depth} 级深度
@@ -51,7 +52,7 @@ export function CanvasTopBar({ mapId }: { mapId: string }) {
         </div>
       </div>
 
-      <div className="pointer-events-auto flex items-center gap-1 rounded-2xl border border-line bg-card/85 p-1.5 shadow-[0_8px_24px_-16px_rgba(28,31,38,0.3)] backdrop-blur-xl">
+      <div className="pointer-events-auto flex max-w-full items-center gap-1 self-end overflow-x-auto rounded-2xl border border-line bg-card/85 p-1.5 shadow-[0_8px_24px_-16px_rgba(28,31,38,0.3)] backdrop-blur-xl sm:self-auto">
         <IconButton title="全部收起到一级" onClick={() => setCollapseAll(mapId, true)}>
           <ChevronsDownUp className="size-4" />
         </IconButton>

@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import clsx from 'clsx';
 import { Highlighter, PanelLeftClose, Plus, Search, Settings2, Star, Trash2 } from 'lucide-react';
 import { dueReviews } from '../srs';
 import { useStore } from '../store';
 import { isConfigured, PROVIDERS } from '../ai';
+import { isNarrow, useNarrow } from '../viewport';
 import { GithubLink, IconButton, Logo, ThemeButton } from './ui';
 import { MapThumb } from './MapThumb';
 
@@ -54,18 +55,42 @@ export function Sidebar() {
 
   const configured = isConfigured(settings);
   const provider = PROVIDERS.find((p) => p.id === settings.providerId);
+  const narrow = useNarrow();
+
+  useEffect(() => {
+    if (narrow) setSidebarOpen(false);
+  }, [narrow, setSidebarOpen]);
+
+  const openAndClose = (run: () => void) => {
+    run();
+    if (isNarrow()) setSidebarOpen(false);
+  };
 
   return (
     <AnimatePresence initial={false}>
+      {open && narrow && (
+        <motion.button
+          type="button"
+          aria-label="关闭侧栏"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-30 bg-black/40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       {open && (
         <motion.aside
-          initial={{ width: 0, opacity: 0 }}
-          animate={{ width: 300, opacity: 1 }}
-          exit={{ width: 0, opacity: 0 }}
+          initial={narrow ? { x: -28, opacity: 0 } : { width: 0, opacity: 0 }}
+          animate={narrow ? { x: 0, opacity: 1 } : { width: 300, opacity: 1 }}
+          exit={narrow ? { x: -28, opacity: 0 } : { width: 0, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 34 }}
-          className="relative z-30 h-full shrink-0 overflow-hidden border-r border-line bg-sunken"
+          className={clsx(
+            'z-40 h-full shrink-0 overflow-hidden border-r border-line bg-sunken',
+            narrow ? 'fixed inset-y-0 left-0 w-[min(88vw,320px)] pb-[env(safe-area-inset-bottom)]' : 'relative',
+          )}
         >
-          <div className="flex h-full w-[300px] flex-col">
+          <div className={clsx('flex h-full flex-col', narrow ? 'w-full' : 'w-[300px]')}>
             <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
               <Logo size={30} />
               <div className="min-w-0 flex-1 leading-tight">
@@ -82,7 +107,7 @@ export function Sidebar() {
             <div className="px-3">
               <button
                 type="button"
-                onClick={() => openMap(null)}
+                onClick={() => openAndClose(() => openMap(null))}
                 className="flex h-10 w-full items-center gap-2 rounded-xl bg-inverse px-3.5 text-[13px] font-medium text-on-inverse shadow-[0_8px_20px_-12px_rgba(28,31,38,0.6)] transition hover:opacity-90"
               >
                 <Plus className="size-4" /> 探索新知识
@@ -121,7 +146,7 @@ export function Sidebar() {
                       <button
                         key={item.nodeId}
                         type="button"
-                        onClick={() => openAt(item.mapId, item.nodeId)}
+                        onClick={() => openAndClose(() => openAt(item.mapId, item.nodeId))}
                         className="block w-full truncate rounded-lg px-2 py-1 text-left text-[12.5px] text-muted hover:bg-ink/5 hover:text-ink"
                       >
                         {item.title}
@@ -138,7 +163,7 @@ export function Sidebar() {
                       <button
                         key={h.id}
                         type="button"
-                        onClick={() => openAt(h.mapId, h.nodeId)}
+                        onClick={() => openAndClose(() => openAt(h.mapId, h.nodeId))}
                         className="block w-full truncate rounded-lg px-2 py-1 text-left text-[12.5px] text-muted hover:bg-ink/5 hover:text-ink"
                       >
                         {h.quote}
@@ -153,7 +178,7 @@ export function Sidebar() {
             <div className="thin-scroll mt-1.5 flex-1 space-y-2 overflow-y-auto px-3 pb-3">
               {list.length === 0 && (
                 <div className="px-2 py-8 text-center text-[12px] leading-relaxed whitespace-pre-line text-faint">
-                  {query ? '没有匹配的地图' : '还没有知识地图\n从右侧输入一个知识点开始'}
+                  {query ? '没有匹配的地图' : '还没有知识地图\n回到首页输入一个知识点开始'}
                 </div>
               )}
               {list.map((m) => (
@@ -161,8 +186,8 @@ export function Sidebar() {
                   key={m.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => openMap(m.id)}
-                  onKeyDown={(e) => e.key === 'Enter' && openMap(m.id)}
+                  onClick={() => openAndClose(() => openMap(m.id))}
+                  onKeyDown={(e) => e.key === 'Enter' && openAndClose(() => openMap(m.id))}
                   className={clsx(
                     'group relative cursor-pointer rounded-2xl border p-2 transition',
                     m.id === currentId ? 'border-onion/50 bg-card shadow-[0_8px_24px_-18px_rgba(28,31,38,0.45)]' : 'border-transparent bg-card/60 hover:bg-card',
@@ -180,7 +205,7 @@ export function Sidebar() {
                       e.stopPropagation();
                       if (confirm(`删除知识地图「${m.title}」？此操作不可撤销。`)) deleteMap(m.id);
                     }}
-                    className="absolute right-2 bottom-2 hidden rounded-md p-1 text-faint group-hover:block hover:bg-rose-50 hover:text-rose-600"
+                    className="absolute right-2 bottom-2 rounded-md p-1 text-faint hover:bg-rose-50 hover:text-rose-600 md:hidden md:group-hover:block"
                   >
                     <Trash2 className="size-3.5" />
                   </button>

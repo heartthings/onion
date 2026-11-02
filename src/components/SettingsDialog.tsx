@@ -25,7 +25,7 @@ export function SettingsDialog() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-            className="relative w-full max-w-[560px] overflow-hidden rounded-[28px] bg-card shadow-[0_40px_80px_-30px_rgba(28,31,38,0.5)]"
+            className="relative max-h-[min(92dvh,900px)] w-full max-w-[560px] overflow-y-auto rounded-[28px] bg-card shadow-[0_40px_80px_-30px_rgba(28,31,38,0.5)]"
           >
             <SettingsForm onClose={() => setOpen(false)} />
           </motion.div>
@@ -67,7 +67,7 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
 
   return (
     <>
-      <div className="flex items-start justify-between px-7 pt-6">
+      <div className="flex items-start justify-between px-4 pt-5 sm:px-7 sm:pt-6">
         <div>
           <h3 className="font-serif text-[20px] font-semibold text-ink">模型设置</h3>
           <p className="mt-1 text-[12.5px] text-muted">支持任意 OpenAI 兼容接口，选择厂商后自动填入地址与默认模型</p>
@@ -77,8 +77,8 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
         </IconButton>
       </div>
 
-      <div className="space-y-4 px-7 pt-5 pb-6">
-        <div className="grid grid-cols-3 gap-1.5">
+      <div className="space-y-4 px-4 pt-5 pb-6 sm:px-7">
+        <div className="grid grid-cols-2 gap-1.5 min-[480px]:grid-cols-3">
           {PROVIDERS.map((p) => (
             <button
               key={p.id}
@@ -88,7 +88,7 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
                 update({ providerId: p.id, baseUrl: p.baseUrl, model: p.model });
               }}
               className={clsx(
-                'h-9 rounded-xl border text-[12.5px] transition',
+                'h-auto min-h-9 rounded-xl border px-1 py-1.5 text-[12px] leading-tight transition',
                 p.id === settings.providerId
                   ? 'border-transparent bg-inverse font-medium text-on-inverse'
                   : 'border-line text-muted hover:border-line hover:bg-ink/5',
@@ -162,7 +162,7 @@ function SettingsForm({ onClose }: { onClose: () => void }) {
         </div>
       </div>
 
-      <div className="flex justify-end border-t border-line bg-paper/40 px-7 py-3.5">
+      <div className="flex justify-end border-t border-line bg-paper/40 px-4 py-3.5 sm:px-7">
         <button type="button" onClick={onClose} className="h-9 rounded-xl bg-inverse px-5 text-[13px] font-medium text-on-inverse transition hover:opacity-90">
           完成
         </button>

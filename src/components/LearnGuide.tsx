@@ -35,7 +35,7 @@ export function LearnGuide() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="text-[11px] font-medium tracking-[0.14em] text-onion-deep">使用手册</div>
-            <div className="font-serif text-[17px] font-semibold text-ink">这样学有什么好处，以及怎么用满它</div>
+            <div className="font-serif text-[15px] font-semibold text-ink sm:text-[17px]">这样学有什么好处，以及怎么用满它</div>
           </div>
           <ChevronDown className={clsx('size-4 text-faint transition', open && 'rotate-180')} />
         </div>

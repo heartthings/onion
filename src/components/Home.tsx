@@ -118,7 +118,7 @@ export function Home() {
   };
 
   return (
-    <div className="paper-grid relative flex h-full justify-center overflow-y-auto px-6">
+    <div className="paper-grid relative flex h-full justify-center overflow-y-auto px-4 sm:px-6">
       <div className="home-glow pointer-events-none absolute inset-x-0 top-0 h-[420px]" />
 
       {!sidebarOpen && (
@@ -137,11 +137,11 @@ export function Home() {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        className="relative my-auto w-full max-w-[720px] py-16"
+        className="relative my-auto w-full max-w-[720px] pt-20 pb-12 sm:py-16"
       >
         <div className="mb-8 flex flex-col items-center text-center">
           <Hero />
-          <h1 className="mt-6 font-serif text-[38px] leading-tight font-semibold tracking-tight text-ink">
+          <h1 className="mt-6 font-serif text-[28px] leading-tight font-semibold tracking-tight text-ink sm:text-[38px]">
             把一个知识点，散开成一张地图
           </h1>
           <p className="mt-3 max-w-[520px] text-[14.5px] leading-relaxed text-muted">
@@ -192,7 +192,7 @@ export function Home() {
           <button
             type="button"
             onClick={() => setSettingsOpen(true)}
-            className="demo-banner mx-auto mt-8 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-2 text-[12.5px] text-amber-800 transition hover:bg-amber-50"
+            className="demo-banner mx-auto mt-8 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50/80 px-4 py-2 text-left text-[12.5px] text-amber-800 transition hover:bg-amber-50"
           >
             <TriangleAlert className="size-4" />
             当前是演示模式，生成的是占位内容。配置一个模型 Key 即可获得真实解析 →
@@ -208,7 +208,7 @@ function Hero() {
   const left = [-38, -13, 13, 38];
   return (
     <div className="relative flex items-center">
-      <svg width="260" height="96" viewBox="0 0 260 96" className="absolute left-1/2 -translate-x-1/2" fill="none">
+      <svg viewBox="0 0 260 96" className="absolute left-1/2 h-auto w-[min(260px,78vw)] -translate-x-1/2" fill="none">
         {left.map((dy, i) => (
           <g key={i}>
             <motion.path

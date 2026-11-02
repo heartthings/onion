@@ -26,7 +26,9 @@ const DURATION = 520;
 
 /** 视野留白：给顶栏、底部提示和右侧详情面板让出位置 */
 function viewPadding(panelOpen: boolean, single: boolean): FitViewOptions['padding'] {
-  const base = single ? '22%' : '48px';
+  const narrow = window.matchMedia('(max-width: 767px)').matches;
+  const base = single ? '18%' : narrow ? '28px' : '48px';
+  if (narrow) return { top: '108px', bottom: panelOpen ? '46%' : '72px', left: base, right: base };
   return { top: '96px', bottom: '72px', left: base, right: panelOpen ? '460px' : base };
 }
 
@@ -217,7 +219,7 @@ export function MindCanvas({ mapId }: { mapId: string }) {
   return (
     <div className="relative h-full w-full bg-paper">
       {comparePick && (
-        <div className="absolute top-[78px] left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full border border-line bg-card px-4 py-2 text-[13px] shadow-lg">
+        <div className="absolute top-[118px] left-1/2 z-30 flex w-[min(calc(100%-1.5rem),28rem)] -translate-x-1/2 items-center justify-center gap-3 rounded-full border border-line bg-card px-4 py-2 text-center text-[13px] shadow-lg sm:top-[78px]">
           <span className="text-ink">再点一个节点，并排看相同和不同</span>
           <button type="button" onClick={cancelCompare} className="text-faint hover:text-ink">
             取消
@@ -259,7 +261,7 @@ export function MindCanvas({ mapId }: { mapId: string }) {
           position="bottom-left"
           pannable
           zoomable
-          className="!mb-4 !ml-[68px] border border-line !bg-card/85 backdrop-blur"
+          className="!mb-4 !ml-[68px] border border-line !bg-card/85 backdrop-blur max-md:!hidden"
           style={{ width: 168, height: 112 }}
           maskColor={theme === 'dark' ? 'rgba(14,14,16,0.72)' : 'rgba(246,245,241,0.7)'}
           nodeBorderRadius={8}
@@ -271,7 +273,7 @@ export function MindCanvas({ mapId }: { mapId: string }) {
       <DetailPanel mapId={mapId} />
 
       {Object.keys(map.nodes).length <= 8 && (
-        <div className="pointer-events-none absolute bottom-5 left-1/2 -translate-x-1/2 rounded-full border border-line bg-card/70 px-4 py-1.5 text-[12px] text-muted backdrop-blur">
+        <div className="pointer-events-none absolute bottom-5 left-1/2 hidden max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full border border-line bg-card/70 px-4 py-1.5 text-center text-[12px] text-muted backdrop-blur sm:block">
           点「散开」或「下一批」· Enter 也可以 · N 自己写 · ? 快捷键
         </div>
       )}

@@ -40,6 +40,10 @@ body,
   margin: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   font-family: var(--font-sans);
   background: var(--color-paper);

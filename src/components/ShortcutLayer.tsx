@@ -122,7 +122,7 @@ export function ShortcutLayer() {
             initial={{ opacity: 0, y: 10, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8 }}
-            className="relative w-full max-w-[420px] rounded-[28px] border border-line bg-card p-6 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)]"
+            className="relative max-h-[min(88dvh,640px)] w-full max-w-[420px] overflow-y-auto rounded-[28px] border border-line bg-card p-5 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)] sm:p-6"
           >
             <div className="font-serif text-[22px] font-semibold text-ink">快捷键</div>
             <p className="mt-1 text-[12.5px] text-faint">在输入框里打字时不会触发</p>

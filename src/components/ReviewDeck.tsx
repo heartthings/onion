@@ -31,7 +31,7 @@ export function ReviewDeck() {
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8 }}
-            className="relative w-full max-w-[460px] rounded-[28px] border border-line bg-card p-6 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)]"
+            className="relative max-h-[min(88dvh,720px)] w-full max-w-[460px] overflow-y-auto rounded-[28px] border border-line bg-card p-5 shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)] sm:p-6"
           >
             <div className="flex items-baseline justify-between">
               <div className="font-serif text-[22px] font-semibold text-ink">今天要复习</div>

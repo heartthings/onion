@@ -25,7 +25,7 @@ export function DetailPanel({ mapId }: { mapId: string }) {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: 28 }}
           transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-          className="absolute top-[78px] right-4 bottom-4 z-20 flex w-[min(420px,calc(100%-2rem))] flex-col overflow-hidden rounded-[28px] border border-line bg-card/92 shadow-[0_30px_60px_-30px_rgba(28,31,38,0.45)] backdrop-blur-2xl"
+          className="absolute top-[78px] right-4 bottom-4 z-20 flex w-[min(420px,calc(100%-2rem))] flex-col overflow-hidden rounded-[28px] border border-line bg-card/92 shadow-[0_30px_60px_-30px_rgba(28,31,38,0.45)] backdrop-blur-2xl max-md:fixed max-md:inset-x-0 max-md:top-auto max-md:right-0 max-md:bottom-0 max-md:h-[min(78dvh,760px)] max-md:w-full max-md:rounded-b-none max-md:pb-[env(safe-area-inset-bottom)]"
         >
           <PanelBody mapId={mapId} nodeId={node.id} />
         </motion.aside>
@@ -80,8 +80,8 @@ function PanelBody({ mapId, nodeId }: { mapId: string; nodeId: string }) {
         </IconButton>
       </div>
 
-      <div className="px-6 pt-3">
-        <h2 className="font-serif text-[24px] leading-tight font-semibold text-ink">{node.title}</h2>
+      <div className="px-4 pt-3 sm:px-6">
+        <h2 className="font-serif text-[20px] leading-tight font-semibold text-ink sm:text-[24px]">{node.title}</h2>
         <div className="mt-4 flex items-center gap-1 border-b border-line">
           {(
             [
@@ -107,7 +107,7 @@ function PanelBody({ mapId, nodeId }: { mapId: string; nodeId: string }) {
         </div>
       </div>
 
-      <div className="thin-scroll flex-1 overflow-y-auto px-6 pt-4 pb-6">
+      <div className="thin-scroll flex-1 overflow-y-auto px-4 pt-4 pb-6 sm:px-6">
         {tab === 'explain' && (
           <div>
             {node.detail ? (
@@ -181,7 +181,7 @@ function PanelBody({ mapId, nodeId }: { mapId: string; nodeId: string }) {
         {tab === 'quiz' && <QuizBox mapId={mapId} nodeId={nodeId} />}
       </div>
 
-      <div className="border-t border-line px-6 py-2.5 text-[11px] text-faint">AI 生成内容仅供参考，重要结论请核实来源</div>
+      <div className="border-t border-line px-4 py-2.5 text-[11px] text-faint sm:px-6">AI 生成内容仅供参考，重要结论请核实来源</div>
     </>
   );
 }

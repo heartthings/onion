@@ -53,17 +53,17 @@ export function CompareDialog() {
             exit={{ opacity: 0, y: 8 }}
             className="relative flex max-h-[min(720px,88vh)] w-full max-w-[680px] flex-col overflow-hidden rounded-[28px] border border-line bg-card shadow-[0_30px_70px_-30px_rgba(0,0,0,0.45)]"
           >
-            <div className="grid grid-cols-2 gap-3 border-b border-line px-6 py-5">
+            <div className="grid grid-cols-2 gap-3 border-b border-line px-4 py-4 sm:px-6 sm:py-5">
               <div>
                 <div className="text-[11px] text-faint">A</div>
-                <div className="mt-1 font-serif text-[18px] leading-snug font-semibold text-ink">{left.title}</div>
+                <div className="mt-1 font-serif text-[15px] leading-snug font-semibold break-words text-ink sm:text-[18px]">{left.title}</div>
               </div>
               <div>
                 <div className="text-[11px] text-faint">B</div>
-                <div className="mt-1 font-serif text-[18px] leading-snug font-semibold text-ink">{right.title}</div>
+                <div className="mt-1 font-serif text-[15px] leading-snug font-semibold break-words text-ink sm:text-[18px]">{right.title}</div>
               </div>
             </div>
-            <div className="thin-scroll prose prose-sm max-w-none overflow-y-auto px-6 py-5">
+            <div className="thin-scroll prose prose-sm max-w-none overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
               {busy && !text ? (
                 <div className="flex items-center gap-2 text-[13px] text-faint">
                   <Loader2 className="size-4 animate-spin" /> 正在并排对比…
