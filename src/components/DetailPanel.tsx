@@ -101,6 +101,7 @@ function PanelBody({ mapId, nodeId }: { mapId: string; nodeId: string }) {
             >
               <Icon className="size-3.5" />
               {label}
+              {key === 'explain' && node.detail?.trim() && <span className="size-1.5 rounded-full bg-onion" title="已有深度解读" />}
               {key === 'note' && node.note?.trim() && <span className="size-1.5 rounded-full bg-onion" />}
             </button>
           ))}

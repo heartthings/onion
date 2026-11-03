@@ -4,7 +4,7 @@
 
 One idea comes in. A map comes out.
 
-You choose the next layer. The model writes the title, the summary, and the explanation straight onto the card, so you can read the node without opening it first.
+You choose the next layer. The title and summary stay on the card. The long explanation stays in the side panel, and the card only shows a small "已解读" mark once it exists.
 
 ## What it is for
 
@@ -28,7 +28,7 @@ You can click around before adding a model key. That is demo mode: the nodes are
 1. Start with one specific concept. Smaller topics make better maps.
 2. The model prepares up to 12 pieces of related information and ranks them by how clearly they mark the boundary. It does not split the topic into "definition, elements, examples". Settings decide how many you see first. The rest sit behind "还有 N 个". Each visible node shows the full summary on the card.
 3. Tap a card to open it. Tap the plus when you want the next layer.
-4. Generate the explanation and it stays on the card, not only inside the side panel. Select a sentence there to highlight it. The star saves the node.
+4. The deep explanation is written only in the side panel. A node that already has one shows "已解读" on its card. Select a sentence in the panel to highlight it. The star saves the node.
 5. The follow-up questions at the end of an explanation are buttons. Tap one and it grows beside the current node, then fans out.
 6. Mark each node **懂了 / 模糊 / 不会** (got it / fuzzy / lost). Fuzzy and lost branches turn amber or rose on the map.
 7. Ask for a few multiple-choice questions on the current node. A wrong answer marks the node as still needing review and drops it into today's queue.

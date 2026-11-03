@@ -1,9 +1,7 @@
 import { memo, useEffect, useState } from 'react';
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { motion } from 'motion/react';
-import { AlertCircle, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { AlertCircle, BookOpenText, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import { expandNode } from '../actions';
 import { useStore } from '../store';
@@ -49,22 +47,29 @@ function Handles() {
   );
 }
 
-function CardCopy({ summary, detail, light }: { summary?: string; detail?: string; light?: boolean }) {
-  if (!summary?.trim() && !detail?.trim()) return null;
+function CardCopy({ summary, light }: { summary?: string; light?: boolean }) {
+  if (!summary?.trim()) return null;
   const tone = light ? 'text-white/75 [&_strong]:text-white' : 'text-muted [&_strong]:text-ink';
   return (
-    <div className={clsx('mt-2 space-y-2 text-[13px] leading-relaxed', tone)}>
-      {summary?.trim() && <p className="whitespace-pre-wrap">{summary}</p>}
-      {detail?.trim() && (
-        <div
-          className={clsx(
-            'space-y-1.5 border-t pt-2 text-[12.5px] [&_h2]:mt-2 [&_h2]:text-[13px] [&_h2]:font-semibold [&_li]:ml-4 [&_li]:list-disc [&_ol]:ml-4 [&_ol]:list-decimal [&_p]:my-1 [&_ul]:my-1',
-            light ? 'border-white/15 [&_h2]:text-white' : 'border-line [&_h2]:text-ink',
-          )}
-        >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{detail}</ReactMarkdown>
-        </div>
+    <div className={clsx('mt-2 text-[13px] leading-relaxed', tone)}>
+      <p className="whitespace-pre-wrap">{summary}</p>
+    </div>
+  );
+}
+
+function ExplainedMark({ node, light }: { node: KNode; light?: boolean }) {
+  const streaming = useStore((s) => s.streamingId === node.id);
+  const ready = Boolean(node.detail?.trim());
+  if (!streaming && !ready) return null;
+  return (
+    <div
+      className={clsx(
+        'mt-2 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium',
+        light ? 'border-white/25 bg-white/10 text-white/90' : 'border-onion/30 bg-onion/10 text-onion-deep',
       )}
+    >
+      {streaming ? <Loader2 className="size-3 animate-spin" /> : <BookOpenText className="size-3" />}
+      {streaming ? '正在解读' : '已解读'}
     </div>
   );
 }
@@ -225,7 +230,8 @@ function RootCard({ node, selected, hiddenCount, mapId, onPeek, onExpand }: Mind
         {node.title}
         <MasteryDot node={node} />
       </div>
-      <CardCopy summary={node.summary} detail={node.detail} light />
+      <CardCopy summary={node.summary} light />
+      <ExplainedMark node={node} light />
       {loading && (
         <div className="mt-2.5 flex items-center gap-2 text-[12.5px] text-white/60">
           <Loader2 className="size-3.5 animate-spin" />
@@ -283,7 +289,8 @@ function ChildCard({ node, side, selected, onPath, hiddenCount, mapId, onToggle,
             {node.favorite && <span className="ml-1 inline-block size-1.5 translate-y-[-1px] rounded-full bg-onion" title="已收藏" />}
             <MasteryDot node={node} />
           </div>
-          <CardCopy summary={node.summary} detail={node.detail} />
+          <CardCopy summary={node.summary} />
+          <ExplainedMark node={node} />
         </div>
       </div>
 

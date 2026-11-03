@@ -29,17 +29,14 @@ function countLines(text: string, width: number, font: number) {
   return lines;
 }
 
-/** 按标题、概括和讲解估一个卡片高度，布局用它把节点中心拉开。 */
+/** 按标题和概括估卡片高度。深度解读不铺在卡片上，只留一枚标记的高度。 */
 export function cardHeight(node: KNode, root = false): number {
   const inner = (root ? ROOT_W : NODE_W) - (root ? 48 : 36);
   let height = root ? 52 : 36;
   height += countLines(node.title || ' ', inner, root ? 21 : 15) * (root ? 28 : 22);
   if (node.origin === 'user') height += 22;
   if (node.summary?.trim()) height += 8 + countLines(node.summary, inner, 13) * 21;
-  if (node.detail?.trim()) {
-    const plain = node.detail.replace(/```[\s\S]*?```/g, 'code').replace(/[#>*_`|-]/g, '');
-    height += 16 + countLines(plain, inner, 12.5) * 20;
-  }
+  if (node.detail?.trim()) height += 26;
   if (!node.expanded) height += 28;
   return height + 78;
 }
@@ -86,7 +83,7 @@ export function structureSignature(map: KMap): string {
     const n = map.nodes[id];
     if (!n) return;
     if (n.hidden) return;
-    parts.push(`${id}:${n.side ?? ''}:${n.collapsed ? 1 : 0}:${n.summary.length}:${n.detail?.length ?? 0}`);
+    parts.push(`${id}:${n.side ?? ''}:${n.collapsed ? 1 : 0}:${n.summary.length}:${n.detail?.trim() ? 1 : 0}`);
     if (!n.collapsed) n.childIds.forEach(walk);
     parts.push(')');
   };
