@@ -9,6 +9,35 @@ import { isNarrow, useNarrow } from '../viewport';
 import { GithubLink, IconButton, Logo, ThemeButton } from './ui';
 import { MapThumb } from './MapThumb';
 
+function SideEntry({
+  label,
+  deleteTitle,
+  onOpen,
+  onDelete,
+}: {
+  label: string;
+  deleteTitle: string;
+  onOpen: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="group flex items-center rounded-lg hover:bg-ink/5">
+      <button type="button" onClick={onOpen} className="min-w-0 flex-1 truncate px-2 py-1 text-left text-[12.5px] text-muted group-hover:text-ink">
+        {label}
+      </button>
+      <button
+        type="button"
+        title={deleteTitle}
+        aria-label={deleteTitle}
+        onClick={onDelete}
+        className="mr-0.5 shrink-0 rounded-md p-1 text-faint opacity-0 pointer-events-none transition hover:bg-rose-50 hover:text-rose-600 group-hover:pointer-events-auto group-hover:opacity-100 max-md:pointer-events-auto max-md:opacity-100"
+      >
+        <Trash2 className="size-3.5" />
+      </button>
+    </div>
+  );
+}
+
 function formatUpdated(t: number) {
   const d = new Date(t);
   const now = new Date();
@@ -47,6 +76,9 @@ export function Sidebar() {
     [maps, query],
   );
 
+  const removeHighlight = useStore((s) => s.removeHighlight);
+  const toggleFavorite = useStore((s) => s.toggleFavorite);
+
   const saved = useMemo(() => {
     const items: { mapId: string; nodeId: string; title: string }[] = [];
     for (const map of Object.values(maps)) {
@@ -54,7 +86,7 @@ export function Sidebar() {
         if (node.favorite) items.push({ mapId: map.id, nodeId: node.id, title: node.title });
       }
     }
-    return items.slice(0, 6);
+    return items;
   }, [maps]);
 
   const configured = isConfigured(settings);
@@ -140,21 +172,20 @@ export function Sidebar() {
             )}
 
             {(saved.length > 0 || highlights.length > 0) && !query && (
-              <div className="mt-4 space-y-2 px-3">
+              <div className="thin-scroll mt-4 max-h-[38%] space-y-2 overflow-y-auto px-3">
                 {saved.length > 0 && (
                   <div>
                     <div className="mb-1 flex items-center gap-1 px-1 text-[11px] font-medium tracking-wider text-faint">
                       <Star className="size-3 fill-onion text-onion" /> 收藏
                     </div>
                     {saved.map((item) => (
-                      <button
-                        key={item.nodeId}
-                        type="button"
-                        onClick={() => openAndClose(() => openAt(item.mapId, item.nodeId))}
-                        className="block w-full truncate rounded-lg px-2 py-1 text-left text-[12.5px] text-muted hover:bg-ink/5 hover:text-ink"
-                      >
-                        {item.title}
-                      </button>
+                      <SideEntry
+                        key={`${item.mapId}:${item.nodeId}`}
+                        label={item.title}
+                        deleteTitle="取消收藏"
+                        onOpen={() => openAndClose(() => openAt(item.mapId, item.nodeId))}
+                        onDelete={() => toggleFavorite(item.mapId, item.nodeId)}
+                      />
                     ))}
                   </div>
                 )}
@@ -163,15 +194,14 @@ export function Sidebar() {
                     <div className="mb-1 flex items-center gap-1 px-1 text-[11px] font-medium tracking-wider text-faint">
                       <Highlighter className="size-3" /> 划线
                     </div>
-                    {highlights.slice(0, 4).map((h) => (
-                      <button
+                    {highlights.map((h) => (
+                      <SideEntry
                         key={h.id}
-                        type="button"
-                        onClick={() => openAndClose(() => openAt(h.mapId, h.nodeId))}
-                        className="block w-full truncate rounded-lg px-2 py-1 text-left text-[12.5px] text-muted hover:bg-ink/5 hover:text-ink"
-                      >
-                        {h.quote}
-                      </button>
+                        label={h.quote}
+                        deleteTitle="删除划线"
+                        onOpen={() => openAndClose(() => openAt(h.mapId, h.nodeId))}
+                        onDelete={() => removeHighlight(h.id)}
+                      />
                     ))}
                   </div>
                 )}

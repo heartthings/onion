@@ -327,7 +327,9 @@ export const useStore = create<State>()((set, get) => ({
       const key = `node:${id}`;
       let reviews = s.reviews;
       if (favorite) reviews = ensureReview(reviews, nodeReview(map, node));
-      else reviews = reviews.filter((card) => card.id !== key || card.reps > 0);
+      else if (node.mastery !== 'lost' && node.mastery !== 'fuzzy' && !node.needsReview) {
+        reviews = reviews.filter((card) => card.id !== key);
+      }
       return { ...patched, reviews };
     }),
 
@@ -410,7 +412,7 @@ export const useStore = create<State>()((set, get) => ({
   removeHighlight: (id) =>
     set((s) => ({
       highlights: s.highlights.filter((h) => h.id !== id),
-      reviews: s.reviews.filter((card) => card.id !== `hl:${id}` || card.reps > 0),
+      reviews: s.reviews.filter((card) => card.id !== `hl:${id}`),
     })),
 
   requestFocus: (mapId, ids) => set({ focus: { mapId, ids, at: Date.now() } }),

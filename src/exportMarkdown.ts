@@ -73,10 +73,13 @@ export function studyToAnki(maps: KMap[], highlights: Highlight[]): string {
 }
 
 export function downloadText(filename: string, text: string) {
-  const url = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' }));
+  const safe = filename.replace(/[\\/:*?"<>|]/g, ' ').replace(/\s+/g, ' ').trim() || 'onion.md';
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
   const a = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = safe;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
 }

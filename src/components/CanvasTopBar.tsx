@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
 import { useReactFlow } from '@xyflow/react';
 import { ChevronsDownUp, ChevronsUpDown, Download, Keyboard, Maximize, PanelLeftOpen } from 'lucide-react';
@@ -19,8 +19,19 @@ export function CanvasTopBar({ mapId }: { mapId: string }) {
   const rf = useReactFlow();
   const [title, setTitle] = useState(map.title);
   const [exportOpen, setExportOpen] = useState(false);
+  const exportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setTitle(map.title), [map.title]);
+
+  useEffect(() => {
+    if (!exportOpen) return;
+    const close = (event: PointerEvent) => {
+      if (exportRef.current?.contains(event.target as Node)) return;
+      setExportOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [exportOpen]);
 
   const nodes = Object.values(map.nodes);
   const depth = Math.max(...nodes.map((n) => n.depth));
@@ -54,23 +65,25 @@ export function CanvasTopBar({ mapId }: { mapId: string }) {
         </div>
       </div>
 
-      <div className="pointer-events-auto flex max-w-full items-center gap-1 self-end overflow-x-auto rounded-2xl border border-line bg-card/85 p-1.5 shadow-[0_8px_24px_-16px_rgba(28,31,38,0.3)] backdrop-blur-xl sm:self-auto">
-        <IconButton title="全部收起到一级" onClick={() => setCollapseAll(mapId, true)}>
-          <ChevronsDownUp className="size-4" />
-        </IconButton>
-        <IconButton title="全部展开" onClick={() => setCollapseAll(mapId, false)}>
-          <ChevronsUpDown className="size-4" />
-        </IconButton>
-        <IconButton title="适应视图" onClick={() => rf.fitView({ padding: { top: '96px', bottom: '72px', left: '48px', right: '48px' }, duration: 600, maxZoom: 1 })}>
-          <Maximize className="size-4" />
-        </IconButton>
-        <div className="mx-1 h-5 w-px bg-line" />
-        <GithubLink />
-        <ThemeButton />
-        <IconButton title="快捷键（?）" onClick={() => setHelpOpen(true)}>
-          <Keyboard className="size-4" />
-        </IconButton>
-        <div className="relative">
+      <div className="pointer-events-auto flex max-w-full items-center self-end rounded-2xl border border-line bg-card/85 p-1.5 shadow-[0_8px_24px_-16px_rgba(28,31,38,0.3)] backdrop-blur-xl sm:self-auto">
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto">
+          <IconButton title="全部收起到一级" onClick={() => setCollapseAll(mapId, true)}>
+            <ChevronsDownUp className="size-4" />
+          </IconButton>
+          <IconButton title="全部展开" onClick={() => setCollapseAll(mapId, false)}>
+            <ChevronsUpDown className="size-4" />
+          </IconButton>
+          <IconButton title="适应视图" onClick={() => rf.fitView({ padding: { top: '96px', bottom: '72px', left: '48px', right: '48px' }, duration: 600, maxZoom: 1 })}>
+            <Maximize className="size-4" />
+          </IconButton>
+          <div className="mx-1 h-5 w-px bg-line" />
+          <GithubLink />
+          <ThemeButton />
+          <IconButton title="快捷键（?）" onClick={() => setHelpOpen(true)}>
+            <Keyboard className="size-4" />
+          </IconButton>
+        </div>
+        <div ref={exportRef} className="relative ml-1 shrink-0">
           <button
             type="button"
             onClick={() => setExportOpen((open) => !open)}
