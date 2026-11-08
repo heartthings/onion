@@ -34,6 +34,7 @@ export async function expandNode(
       existing,
       count: st.settings.childCount,
       hint: opts.hint,
+      sense: map.sense,
     });
     const s = useStore.getState();
     if (!s.maps[mapId]?.nodes[nodeId]) return;
@@ -66,7 +67,7 @@ export async function explain(mapId: string, nodeId: string): Promise<void> {
   st.updateNode(mapId, nodeId, { detail: '' });
   let text = '';
   try {
-    for await (const chunk of explainNode(st.settings, getPath(map, nodeId), controller.signal)) {
+    for await (const chunk of explainNode(st.settings, getPath(map, nodeId), controller.signal, map.sense)) {
       text += chunk;
       useStore.getState().updateNode(mapId, nodeId, { detail: text });
     }

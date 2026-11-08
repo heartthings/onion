@@ -5,7 +5,7 @@ import { AlertCircle, BookOpenText, Loader2, Plus, RefreshCw, Trash2 } from 'luc
 import clsx from 'clsx';
 import { expandNode } from '../actions';
 import { useStore } from '../store';
-import type { KNode, Mastery, Side } from '../types';
+import type { KMap, KNode, Mastery, Sense, Side } from '../types';
 import { paintOf } from '../theme';
 import { NODE_W, ROOT_W } from '../layout';
 
@@ -200,6 +200,45 @@ function NodeTools({ node, mapId, hiddenCount, onPeek, onExpand, light }: Pick<M
   );
 }
 
+function forkSense(map: KMap, next: Sense) {
+  const pool = [map.sense, ...(map.alternatives ?? [])].filter((item): item is Sense => Boolean(item));
+  const alternatives = pool.filter((item) => item.kind !== next.kind || item.gloss !== next.gloss);
+  const { mapId, rootId } = useStore.getState().createMap(map.title, {
+    sense: next,
+    ...(alternatives.length ? { alternatives } : {}),
+  });
+  void expandNode(mapId, rootId);
+}
+
+function SenseBar({ mapId }: { mapId: string }) {
+  const map = useStore((s) => s.maps[mapId]);
+  if (!map?.sense && !map?.alternatives?.length) return null;
+  const others = map.alternatives ?? [];
+  return (
+    <div className="nodrag nopan mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1" onClick={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()}>
+      {map.sense && (
+        <span title={map.sense.gloss} className="rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[12px] text-white/90">
+          {map.sense.kind}
+        </span>
+      )}
+      {others.map((alt) => {
+        const crowded = others.filter((item) => item.kind === alt.kind).length > 1;
+        return (
+          <button
+            key={`${alt.kind}-${alt.gloss}`}
+            type="button"
+            title={alt.gloss}
+            onClick={() => forkSense(map, alt)}
+            className="text-[12px] text-white/70 underline-offset-2 hover:text-white hover:underline"
+          >
+            {crowded ? `换成${alt.kind}：${alt.gloss}` : `换成${alt.kind}`}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function weakRing(node: KNode): string | undefined {
   if (node.needsReview || node.mastery === 'lost') return '#e11d48';
   if (node.mastery === 'fuzzy') return '#d97706';
@@ -230,6 +269,7 @@ function RootCard({ node, selected, hiddenCount, mapId, onPeek, onExpand }: Mind
         {node.title}
         <MasteryDot node={node} />
       </div>
+      <SenseBar mapId={mapId} />
       <CardCopy summary={node.summary} light />
       <ExplainedMark node={node} light />
       {loading && (

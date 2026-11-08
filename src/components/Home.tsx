@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowUp, PanelLeftOpen, RefreshCw, TriangleAlert } from 'lucide-react';
+import clsx from 'clsx';
+import { ArrowUp, Loader2, PanelLeftOpen, RefreshCw, TriangleAlert } from 'lucide-react';
 import { useStore } from '../store';
 import { expandNode } from '../actions';
-import { isConfigured } from '../ai';
+import { classifySenses, isConfigured, sensesNeedChoice, senseScope, type SenseDraft } from '../ai';
 import { BRANCH_COLORS } from '../theme';
 import { loadTopics, topicsFetchedAt } from '../topics';
 import type { Topic } from '../types';
@@ -94,7 +95,11 @@ function TopicRail({ onPick }: { onPick: (title: string) => void }) {
 
 export function Home() {
   const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [pending, setPending] = useState<{ query: string; senses: SenseDraft[] } | null>(null);
+  const [active, setActive] = useState(0);
   const ref = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const createMap = useStore((s) => s.createMap);
   const settings = useStore((s) => s.settings);
   const sidebarOpen = useStore((s) => s.sidebarOpen);
@@ -110,11 +115,42 @@ export function Home() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [value]);
 
-  const start = (topic: string) => {
-    const t = topic.trim();
-    if (!t) return;
-    const { mapId, rootId } = createMap(t);
+  const begin = (topic: string, senses: SenseDraft[], index: number, keepAll = false) => {
+    const { mapId, rootId } = createMap(topic, senseScope(senses, index, keepAll));
     void expandNode(mapId, rootId);
+  };
+
+  const start = async (topic: string) => {
+    const t = topic.trim();
+    if (!t || busy) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setPending(null);
+    setBusy(true);
+    try {
+      const senses = await classifySenses(settings, t, controller.signal);
+      if (controller.signal.aborted) return;
+      if (sensesNeedChoice(senses)) {
+        setValue(t);
+        setPending({ query: t, senses });
+        setActive(0);
+        return;
+      }
+      begin(t, senses, 0);
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') return;
+      begin(t, [], 0);
+    } finally {
+      if (abortRef.current === controller) setBusy(false);
+    }
+  };
+
+  const choose = (index: number) => {
+    if (!pending) return;
+    const next = pending;
+    setPending(null);
+    begin(next.query, next.senses, index, true);
   };
 
   return (
@@ -164,11 +200,44 @@ export function Home() {
               ref={ref}
               rows={1}
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                setValue(next);
+                if (pending && next.trim() !== pending.query) setPending(null);
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                if (e.nativeEvent.isComposing) return;
+                if (pending && value.trim() === pending.query) {
+                  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    setActive((i) => (i + 1) % pending.senses.length);
+                    return;
+                  }
+                  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    setActive((i) => (i - 1 + pending.senses.length) % pending.senses.length);
+                    return;
+                  }
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setPending(null);
+                    return;
+                  }
+                  const digit = Number(e.key);
+                  if (digit >= 1 && digit <= pending.senses.length) {
+                    e.preventDefault();
+                    choose(digit - 1);
+                    return;
+                  }
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    choose(active);
+                    return;
+                  }
+                }
+                if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
-                  start(value);
+                  void start(value);
                 }
               }}
               placeholder="想弄懂什么？例如：区块链、凯恩斯主义、CRISPR…"
@@ -176,16 +245,42 @@ export function Home() {
             />
             <button
               type="button"
-              disabled={!value.trim()}
-              onClick={() => start(value)}
+              disabled={!value.trim() || busy}
+              onClick={() => void start(value)}
               className="mb-1 flex size-11 shrink-0 items-center justify-center rounded-2xl bg-inverse text-on-inverse transition hover:opacity-90 disabled:opacity-40"
             >
-              <ArrowUp className="size-5" />
+              {busy ? <Loader2 className="size-5 animate-spin" /> : <ArrowUp className="size-5" />}
             </button>
           </div>
         </div>
 
-        <TopicRail onPick={start} />
+        {busy && <p className="mt-3 text-center text-[12.5px] text-faint">正在确认它指的是哪一个…</p>}
+        {pending && (
+          <div className="mt-3 rounded-[24px] border border-line bg-card p-3">
+            <div className="px-1.5 pt-1 text-[13px] text-ink">「{pending.query}」指的不止一个东西</div>
+            <p className="px-1.5 pt-1 pb-2 text-[12px] text-faint">选一个再散开。方向键移动，回车确认。</p>
+            <div className="flex flex-col gap-2" role="listbox" aria-label="选择所指">
+              {pending.senses.map((sense, index) => (
+                <button
+                  key={`${sense.kind}-${sense.gloss}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === active}
+                  onMouseEnter={() => setActive(index)}
+                  onClick={() => choose(index)}
+                  className={clsx(
+                    'flex items-baseline gap-3 rounded-2xl border px-3.5 py-3 text-left transition',
+                    index === active ? 'border-onion bg-onion/[0.06]' : 'border-line hover:border-onion/40',
+                  )}
+                >
+                  <span className="shrink-0 text-[12px] font-medium text-onion-deep">{sense.kind}</span>
+                  <span className="text-[13.5px] text-ink">{sense.gloss}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <TopicRail onPick={(title) => void start(title)} />
         <LearnGuide />
 
         {!isConfigured(settings) && (

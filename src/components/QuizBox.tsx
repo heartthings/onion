@@ -20,7 +20,7 @@ export function QuizBox({ mapId, nodeId }: { mapId: string; nodeId: string }) {
     if (!map?.nodes[nodeId]) return;
     setBusy(true);
     try {
-      const next = await generateQuiz(settings, getPath(map, nodeId));
+      const next = await generateQuiz(settings, getPath(map, nodeId), map.sense);
       setQuestions(next);
       setIndex(0);
       setPicked(null);

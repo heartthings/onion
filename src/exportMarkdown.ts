@@ -4,6 +4,7 @@ export function mapToMarkdown(map: KMap): string {
   const lines: string[] = [];
   const root = map.nodes[map.rootId];
   lines.push(`# ${root.title}`, '');
+  if (map.sense) lines.push(`所指：${map.sense.kind}。${map.sense.gloss}`, '');
   if (root.summary) lines.push(`> ${root.summary}`, '');
 
   const walk = (id: string, level: number) => {

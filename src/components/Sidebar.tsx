@@ -38,7 +38,11 @@ export function Sidebar() {
   const list = useMemo(
     () =>
       Object.values(maps)
-        .filter((m) => m.title.toLowerCase().includes(query.trim().toLowerCase()))
+        .filter((m) => {
+          const q = query.trim().toLowerCase();
+          if (!q) return true;
+          return [m.title, m.sense?.kind, m.sense?.gloss].some((text) => text?.toLowerCase().includes(q));
+        })
         .sort((a, b) => b.updatedAt - a.updatedAt),
     [maps, query],
   );
@@ -197,6 +201,7 @@ export function Sidebar() {
                     <MapThumb map={m} />
                   </div>
                   <div className="mt-2 line-clamp-2 pr-6 text-[13px] leading-snug font-medium text-ink">{m.title}</div>
+                  {m.sense && <div className="mt-0.5 text-[11px] text-onion-deep">{m.sense.kind}</div>}
                   <div className="mt-0.5 text-[11px] text-faint">{formatUpdated(m.updatedAt)}</div>
                   <button
                     type="button"

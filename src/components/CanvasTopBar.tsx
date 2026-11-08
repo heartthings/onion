@@ -47,6 +47,7 @@ export function CanvasTopBar({ mapId }: { mapId: string }) {
             className="w-full bg-transparent font-serif text-[16px] font-semibold text-ink outline-none sm:w-[min(36vw,360px)]"
           />
           <div className="text-[11.5px] text-faint">
+            {map.sense ? `${map.sense.kind} · ` : ''}
             {nodes.length} 个知识点 · {depth} 级深度
           </div>
         </div>

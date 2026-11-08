@@ -1,4 +1,4 @@
-import type { ChildDraft, KNode, QuizQuestion, Settings } from './types';
+import type { ChildDraft, KNode, QuizQuestion, Sense, Settings } from './types';
 
 export interface ProviderPreset {
   id: string;
@@ -75,8 +75,8 @@ async function post(s: Settings, body: unknown, signal?: AbortSignal): Promise<R
   return res;
 }
 
-async function chat(s: Settings, messages: Message[], signal?: AbortSignal): Promise<string> {
-  const res = await post(s, requestBody(s, messages, { temperature: 0.6, stream: false }), signal);
+async function chat(s: Settings, messages: Message[], signal?: AbortSignal, temperature = 0.6): Promise<string> {
+  const res = await post(s, requestBody(s, messages, { temperature, stream: false }), signal);
   const j = await res.json();
   return j?.choices?.[0]?.message?.content ?? '';
 }
@@ -131,6 +131,86 @@ function parseLooseJSON(raw: string): unknown {
 /** 一次拆解最多收下的子节点。界面只先画出其中价值最高的若干个。 */
 export const POOL_SIZE = 12;
 
+/** 低于这条的同名对象不放进「换成」。 */
+const ALT_FLOOR = 40;
+
+export interface SenseDraft extends Sense {
+  confidence: number;
+}
+
+const SENSE_SYSTEM = `你在判断用户输入的那句话指向哪一个对象。只输出 JSON，不要任何额外文字。
+格式：{"senses":[{"kind":"经济学概念","gloss":"已经花掉、收不回来，还要不要继续","confidence":92}]}
+
+规则：
+1. 按所指拆，不按词性拆。同一个对象的不同说法（词语、成语、短句、术语、俗称）只保留一条。
+2. 只有这句话能指向上两个互不相干的对象时，才给出多条。例如一个经济学概念，和一部同名电影。
+3. senses 按 confidence 从高到低，最多 4 条。confidence 是 0 到 100 的整数，表示用户没写别的限定时、指的是它的可能性。
+4. kind 用 2-8 个字，写它是哪一类对象。gloss 不超过 28 个字，让人能认出是哪一个，不要写定义全文。
+5. 用户已经在输入里点明了所指（例如带了「电影」或「谬误」），只返回那一条，confidence 给 95 以上。
+6. 没有把握就只返回最常见的那一条。不要为了凑数把同义词拆开。
+7. 使用简体中文。`;
+
+export function sensesNeedChoice(senses: SenseDraft[]): boolean {
+  if (senses.length < 2) return false;
+  const gap = senses[0].confidence - senses[1].confidence;
+  return senses[0].confidence < 75 || gap < 25;
+}
+
+export function senseScope(senses: SenseDraft[], index: number, keepAll = false): { sense: Sense; alternatives?: Sense[] } | undefined {
+  const chosen = senses[index];
+  if (!chosen) return undefined;
+  const alternatives = senses
+    .filter((_, i) => i !== index)
+    .filter((item) => keepAll || item.confidence >= ALT_FLOOR)
+    .map(({ kind, gloss }) => ({ kind, gloss }));
+  return { sense: { kind: chosen.kind, gloss: chosen.gloss }, ...(alternatives.length ? { alternatives } : {}) };
+}
+
+function parseSenses(raw: string): SenseDraft[] {
+  const parsed = parseLooseJSON(raw) as { senses?: unknown } | unknown[] | null;
+  const list = Array.isArray(parsed) ? parsed : (parsed as { senses?: unknown } | null)?.senses;
+  if (!Array.isArray(list)) return [];
+  const senses: SenseDraft[] = [];
+  const seen = new Set<string>();
+  for (const item of list as Array<Record<string, unknown>>) {
+    const kind = String(item?.kind ?? '').trim().slice(0, 12);
+    const gloss = String(item?.gloss ?? '').trim().slice(0, 40);
+    if (!kind || !gloss) continue;
+    const key = `${kind}\n${gloss}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const rawValue = Number(item?.confidence);
+    const confidence = Number.isFinite(rawValue) ? Math.max(0, Math.min(100, Math.round(rawValue))) : 0;
+    senses.push({ kind, gloss, confidence });
+  }
+  senses.sort((a, b) => b.confidence - a.confidence);
+  return senses.slice(0, 4);
+}
+
+export async function classifySenses(s: Settings, query: string, signal?: AbortSignal): Promise<SenseDraft[]> {
+  const text = query.trim();
+  if (!text) return [];
+  if (!isConfigured(s)) {
+    await sleep(320);
+    return demoSenses(text);
+  }
+  const raw = await chat(
+    s,
+    [
+      { role: 'system', content: SENSE_SYSTEM },
+      { role: 'user', content: `用户输入：${text}` },
+    ],
+    signal,
+    0.2,
+  );
+  return parseSenses(raw);
+}
+
+function senseLine(sense?: Sense): string {
+  if (!sense) return '';
+  return `这张图锁定的所指：${sense.kind}（${sense.gloss}）。只讨论这一个对象，不要混进同名的其他东西。`;
+}
+
 const EXPAND_SYSTEM = `你在画一张知识地图。用户点开一个知识点，你要散开的是围绕它的相关信息，按价值排序，让人看清这个知识点的边界在哪里。
 
 只输出 JSON，不要任何额外文字。格式：
@@ -155,15 +235,16 @@ export interface ExpandResult {
 
 export async function generateChildren(
   s: Settings,
-  opts: { path: KNode[]; existing: string[]; count: number; hint?: string },
+  opts: { path: KNode[]; existing: string[]; count: number; hint?: string; sense?: Sense },
   signal?: AbortSignal,
 ): Promise<ExpandResult> {
-  const { path, existing, count, hint } = opts;
+  const { path, existing, count, hint, sense } = opts;
   if (!isConfigured(s)) return demoChildren(path, existing, count, hint);
 
   const node = path[path.length - 1];
   const user = [
     `根主题：${path[0].title}`,
+    senseLine(sense),
     `知识路径：${path.map((n) => n.title).join(' → ')}`,
     `当前要拆解的节点：${node.title}${node.summary ? `（${node.summary}）` : ''}`,
     existing.length ? `它已有这些子节点，不要重复：${existing.join('、')}` : '',
@@ -218,7 +299,7 @@ const EXPLAIN_SYSTEM = `你在讲解思维导图上的一个知识点。目标�
 
 要求：结合知识路径理解语境；不确定就直说；可以用公式（行内代码）和对比。全文 400-800 字，简体中文。`;
 
-export async function* explainNode(s: Settings, path: KNode[], signal?: AbortSignal): AsyncGenerator<string> {
+export async function* explainNode(s: Settings, path: KNode[], signal?: AbortSignal, sense?: Sense): AsyncGenerator<string> {
   if (!isConfigured(s)) {
     yield* demoExplain(path);
     return;
@@ -226,9 +307,12 @@ export async function* explainNode(s: Settings, path: KNode[], signal?: AbortSig
   const node = path[path.length - 1];
   const user = [
     `根主题：${path[0].title}`,
+    senseLine(sense),
     `知识路径：${path.map((n) => n.title).join(' → ')}`,
     `请讲解：${node.title}${node.summary ? `（${node.summary}）` : ''}`,
-  ].join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
   yield* chatStream(
     s,
     [
@@ -254,7 +338,7 @@ const QUIZ_SYSTEM = `你是命题老师。只输出 JSON，不要其他文字。
 格式：{"questions":[{"question":"题干","options":["A","B","C","D"],"answer":0,"why":"一句话解析"}]}
 规则：正好 3 题；每题 4 个选项；answer 是正确选项的下标（0-3）；题目只考给定知识点，不要跑题；简体中文。`;
 
-export async function generateQuiz(s: Settings, path: KNode[]): Promise<QuizQuestion[]> {
+export async function generateQuiz(s: Settings, path: KNode[], sense?: Sense): Promise<QuizQuestion[]> {
   const node = path[path.length - 1];
   if (!isConfigured(s)) {
     await sleep(400);
@@ -264,7 +348,9 @@ export async function generateQuiz(s: Settings, path: KNode[]): Promise<QuizQues
     { role: 'system', content: QUIZ_SYSTEM },
     {
       role: 'user',
-      content: `知识路径：${path.map((item) => item.title).join(' → ')}\n知识点：${node.title}\n${node.summary ? `概括：${node.summary}` : ''}`,
+      content: [senseLine(sense), `知识路径：${path.map((item) => item.title).join(' → ')}`, `知识点：${node.title}`, node.summary ? `概括：${node.summary}` : '']
+        .filter(Boolean)
+        .join('\n'),
     },
   ]);
   const parsed = parseLooseJSON(raw) as { questions?: QuizQuestion[] } | null;
@@ -316,6 +402,22 @@ function demoQuiz(title: string): QuizQuestion[] {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function demoSenses(query: string): SenseDraft[] {
+  if (query.includes('沉没成本') && /电影/.test(query)) {
+    return [{ kind: '电影', gloss: '一部同名电影', confidence: 96 }];
+  }
+  if (query.includes('沉没成本') && /谬误|经济学|代价/.test(query)) {
+    return [{ kind: '经济学概念', gloss: '已经花掉、收不回来，还要不要继续', confidence: 96 }];
+  }
+  if (query === '沉没成本') {
+    return [
+      { kind: '经济学概念', gloss: '已经花掉、收不回来，还要不要继续', confidence: 86 },
+      { kind: '电影', gloss: '一部同名电影', confidence: 64 },
+    ];
+  }
+  return [];
+}
 
 const OUTLINE_TITLE = /^(核心定义|基本含义|基本概念|关键要素|关键组成|关键要点|具体例子|举个例子|常见误区|内在机制|运作原理|一句话理解|核心讲解|进一步探索|实践方法|历史与起源|典型应用|相关概念|前沿进展)$/;
 

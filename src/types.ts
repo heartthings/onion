@@ -37,6 +37,12 @@ export interface KNode {
   createdAt: number;
 }
 
+/** 一句话所指的那一个对象。同名的另一部电影、另一个概念是另一条。 */
+export interface Sense {
+  kind: string;
+  gloss: string;
+}
+
 export interface KMap {
   id: string;
   title: string;
@@ -44,6 +50,10 @@ export interface KMap {
   nodes: Record<string, KNode>;
   createdAt: number;
   updatedAt: number;
+  /** 这张图锁定的所指 */
+  sense?: Sense;
+  /** 同一句话的其他所指。换过去会另开一张图。 */
+  alternatives?: Sense[];
 }
 
 export type ThemeName = 'light' | 'dark';

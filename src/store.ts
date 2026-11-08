@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { ensureReview, gradeCard, nodeReview, type Grade } from './srs';
-import type { ChildDraft, Highlight, KMap, KNode, Mastery, ReviewCard, Settings } from './types';
+import type { ChildDraft, Highlight, KMap, KNode, Mastery, ReviewCard, Sense, Settings } from './types';
 
 /** UUID v4. `randomUUID` only exists on https and localhost, so plain http falls back to `getRandomValues`. */
 function uid() {
@@ -48,7 +48,7 @@ interface State {
   /** 快捷键 N：让详情面板打开「自己写一个节点」 */
   addRequest: { mapId: string; nodeId: string; at: number } | null;
 
-  createMap: (topic: string) => { mapId: string; rootId: string };
+  createMap: (topic: string, scope?: { sense?: Sense; alternatives?: Sense[] }) => { mapId: string; rootId: string };
   openMap: (id: string | null) => void;
   openAt: (mapId: string, nodeId: string) => void;
   deleteMap: (id: string) => void;
@@ -140,15 +140,18 @@ export const useStore = create<State>()((set, get) => ({
   comparePair: null,
   settings: DEFAULT_SETTINGS,
 
-  createMap: (topic) => {
-    const root = newNode({ title: topic.trim(), parentId: null, depth: 0, color: -1 });
+  createMap: (topic, scope) => {
+    const title = topic.trim();
+    const root = newNode({ title, parentId: null, depth: 0, color: -1 });
     const map: KMap = {
       id: uid(),
-      title: topic.trim(),
+      title,
       rootId: root.id,
       nodes: { [root.id]: root },
       createdAt: Date.now(),
       updatedAt: Date.now(),
+      ...(scope?.sense ? { sense: scope.sense } : {}),
+      ...(scope?.alternatives?.length ? { alternatives: scope.alternatives } : {}),
     };
     set((s) => ({ maps: { ...s.maps, [map.id]: map }, currentId: map.id, selectedId: null }));
     return { mapId: map.id, rootId: root.id };
