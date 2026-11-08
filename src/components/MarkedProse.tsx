@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Highlighter, X } from 'lucide-react';
@@ -95,21 +96,24 @@ export function MarkedProse({
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
       </div>
 
-      {menu && (
-        <button
-          type="button"
-          style={{ left: menu.x, top: menu.y }}
-          className="fixed z-50 flex -translate-x-1/2 -translate-y-[120%] items-center gap-1.5 rounded-full bg-inverse px-3 py-1.5 text-[12px] font-medium text-on-inverse shadow-lg"
-          onMouseDown={(e) => e.preventDefault()}
-          onClick={() => {
-            onHighlight(menu.quote);
-            setMenu(null);
-            window.getSelection()?.removeAllRanges();
-          }}
-        >
-          <Highlighter className="size-3.5" /> 划线
-        </button>
-      )}
+      {menu &&
+        createPortal(
+          // 挂到 body 上：侧栏的 backdrop-blur 和 transform 会让 fixed 定位以侧栏为基准，菜单会被推到屏幕外
+          <button
+            type="button"
+            style={{ left: menu.x, top: menu.y }}
+            className="fixed z-50 flex -translate-x-1/2 -translate-y-[120%] items-center gap-1.5 rounded-full bg-inverse px-3 py-1.5 text-[12px] font-medium text-on-inverse shadow-lg"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              onHighlight(menu.quote);
+              setMenu(null);
+              window.getSelection()?.removeAllRanges();
+            }}
+          >
+            <Highlighter className="size-3.5" /> 划线
+          </button>,
+          document.body,
+        )}
 
       {quotes.length > 0 && (
         <div className="mt-5">

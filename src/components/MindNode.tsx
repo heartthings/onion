@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { AlertCircle, BookOpenText, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import { isRealSense } from '../ai';
-import { expandNode } from '../actions';
+import { explain, expandNode } from '../actions';
 import { useStore } from '../store';
 import type { KMap, KNode, Sense, Side } from '../types';
 import { paintOf } from '../theme';
@@ -185,7 +185,13 @@ function NodeTools({ node, mapId, hiddenCount, onPeek, onExpand, light }: Pick<M
             const created = addUserChild(mapId, node.id, { title, summary: '' });
             setDraft('');
             setComposing(false);
-            if (created) requestFocus(mapId, [created]);
+            if (created) {
+              requestFocus(mapId, [created]);
+              // 自己写的节点默认直接出深度解读，并打开侧栏。已有解读在流式输出时不打断它。
+              const st = useStore.getState();
+              st.selectNode(created);
+              if (!st.streamingId) void explain(mapId, created);
+            }
           }}
         >
           <input
