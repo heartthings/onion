@@ -3,9 +3,10 @@ import { Handle, Position, type Node, type NodeProps } from '@xyflow/react';
 import { motion } from 'motion/react';
 import { AlertCircle, BookOpenText, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
+import { isRealSense } from '../ai';
 import { expandNode } from '../actions';
 import { useStore } from '../store';
-import type { KMap, KNode, Mastery, Sense, Side } from '../types';
+import type { KMap, KNode, Sense, Side } from '../types';
 import { paintOf } from '../theme';
 import { NODE_W, ROOT_W } from '../layout';
 
@@ -23,17 +24,42 @@ export type MindNodeData = {
 
 export type MindFlowNode = Node<MindNodeData, 'mind'>;
 
-function MasteryDot({ node }: { node: KNode }) {
-  if (node.needsReview || node.mastery === 'lost') {
-    return <span className="ml-1 inline-block size-2 translate-y-[-1px] rounded-full bg-rose-500" title="还要再看" />;
-  }
-  if (node.mastery === 'fuzzy') {
-    return <span className="ml-1 inline-block size-2 translate-y-[-1px] rounded-full bg-amber-500" title="模糊" />;
-  }
-  if (node.mastery === 'got') {
-    return <span className="ml-1 inline-block size-2 translate-y-[-1px] rounded-full bg-emerald-500" title="懂了" />;
-  }
-  return null;
+const MASTERY: { key: 'got' | 'fuzzy' | 'lost'; label: string; on: string; dot: string }[] = [
+  { key: 'got', label: '懂了', on: 'border-transparent bg-emerald-500 text-white shadow-[0_6px_14px_-8px_rgba(16,185,129,0.9)]', dot: 'bg-emerald-500' },
+  { key: 'fuzzy', label: '模糊', on: 'border-transparent bg-amber-500 text-white shadow-[0_6px_14px_-8px_rgba(245,158,11,0.9)]', dot: 'bg-amber-500' },
+  { key: 'lost', label: '不会', on: 'border-transparent bg-rose-500 text-white shadow-[0_6px_14px_-8px_rgba(244,63,94,0.9)]', dot: 'bg-rose-500' },
+];
+
+function MasteryRail({ node, mapId, light }: { node: KNode; mapId: string; light?: boolean }) {
+  const setMastery = useStore((s) => s.setMastery);
+  const idle = light
+    ? 'border-white/20 bg-white/10 text-white/80 hover:bg-white/20'
+    : 'border-line bg-paper text-muted hover:border-transparent hover:text-ink';
+  return (
+    <div
+      className="nodrag nopan flex shrink-0 flex-col gap-1"
+      onClick={(event) => event.stopPropagation()}
+      onDoubleClick={(event) => event.stopPropagation()}
+    >
+      {MASTERY.map((item) => {
+        const selected = node.mastery === item.key;
+        return (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => setMastery(mapId, node.id, item.key)}
+            className={clsx(
+              'inline-flex h-7 items-center gap-1 rounded-full border px-2 text-[11px] font-medium tracking-wide transition',
+              selected ? item.on : idle,
+            )}
+          >
+            <span className={clsx('size-1.5 rounded-full', selected ? 'bg-white' : item.dot)} />
+            {item.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function Handles() {
@@ -78,7 +104,6 @@ function NodeTools({ node, mapId, hiddenCount, onPeek, onExpand, light }: Pick<M
   const addRequest = useStore((s) => s.addRequest);
   const addUserChild = useStore((s) => s.addUserChild);
   const deleteNode = useStore((s) => s.deleteNode);
-  const setMastery = useStore((s) => s.setMastery);
   const startCompare = useStore((s) => s.startCompare);
   const comparePick = useStore((s) => s.comparePick);
   const requestFocus = useStore((s) => s.requestFocus);
@@ -95,8 +120,6 @@ function NodeTools({ node, mapId, hiddenCount, onPeek, onExpand, light }: Pick<M
   const chip = light
     ? 'border-white/20 bg-white/10 text-white/85 hover:bg-white/20'
     : 'border-line bg-paper text-muted hover:text-ink';
-
-  const mark = (mastery: Mastery) => setMastery(mapId, node.id, mastery);
 
   return (
     <div className="nodrag nopan mt-3" onClick={stop} onDoubleClick={stop}>
@@ -139,22 +162,6 @@ function NodeTools({ node, mapId, hiddenCount, onPeek, onExpand, light }: Pick<M
         >
           {comparePick === node.id ? '再点一个' : '对比'}
         </button>
-        {(
-          [
-            ['got', '懂了'],
-            ['fuzzy', '模糊'],
-            ['lost', '不会'],
-          ] as const
-        ).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => mark(key)}
-              className={clsx('inline-flex h-7 items-center rounded-full border px-2 text-[12px]', node.mastery === key ? 'border-transparent bg-inverse text-on-inverse' : chip)}
-            >
-              {label}
-            </button>
-          ))}
         {!isRoot && (
           <button
             type="button"
@@ -210,21 +217,16 @@ function forkSense(map: KMap, next: Sense) {
   void expandNode(mapId, rootId);
 }
 
-/** 种类在锁定的所指和候选里是否重复。重复时（如两个「人物」），只写种类分不清，要写描述。 */
-function kindRepeats(map: KMap, kind: string): boolean {
-  const kinds = [map.sense?.kind, ...(map.alternatives ?? []).map((item) => item.kind)];
-  return kinds.filter((item) => item === kind).length > 1;
-}
-
 function SenseBar({ mapId }: { mapId: string }) {
   const map = useStore((s) => s.maps[mapId]);
-  if (!map?.sense && !map?.alternatives?.length) return null;
-  const others = map.alternatives ?? [];
+  const sense = map?.sense && isRealSense(map.sense) ? map.sense : undefined;
+  const others = (map?.alternatives ?? []).filter(isRealSense);
+  if (!sense && !others.length) return null;
   return (
     <div className="nodrag nopan mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1" onClick={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()}>
-      {map.sense && (
-        <span title={map.sense.gloss} className="max-w-full truncate rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[12px] text-white/90">
-          {kindRepeats(map, map.sense.kind) ? map.sense.gloss : map.sense.kind}
+      {sense && (
+        <span title={sense.kind} className="max-w-full truncate rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[12px] text-white/90">
+          {sense.gloss}
         </span>
       )}
       {others.map((alt) => (
@@ -235,7 +237,7 @@ function SenseBar({ mapId }: { mapId: string }) {
           onClick={() => forkSense(map, alt)}
           className="max-w-full truncate text-[12px] text-white/70 underline-offset-2 hover:text-white hover:underline"
         >
-          {kindRepeats(map, alt.kind) ? `换成：${alt.gloss}` : `换成${alt.kind}`}
+          {`换成：${alt.gloss}`}
         </button>
       ))}
     </div>
@@ -264,24 +266,26 @@ function RootCard({ node, selected, hiddenCount, mapId, onPeek, onExpand }: Mind
       )}
     >
       <div className="pointer-events-none absolute -right-10 -top-10 size-32 rounded-full bg-onion/25 blur-2xl" />
-      <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-[0.14em] text-onion">
-        <span className="size-1.5 rounded-full bg-onion" />
-        核心知识
-      </div>
-      <div className="font-serif text-[21px] leading-snug font-semibold">
-        {node.title}
-        <MasteryDot node={node} />
-      </div>
-      <SenseBar mapId={mapId} />
-      <CardCopy summary={node.summary} light />
-      <ExplainedMark node={node} light />
-      {loading && (
-        <div className="mt-2.5 flex items-center gap-2 text-[12.5px] text-white/60">
-          <Loader2 className="size-3.5 animate-spin" />
-          AI 正在拆解这个知识点…
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="mb-2 flex items-center gap-1.5 text-[11px] font-medium tracking-[0.14em] text-onion">
+            <span className="size-1.5 rounded-full bg-onion" />
+            核心知识
+          </div>
+          <div className="font-serif text-[21px] leading-snug font-semibold">{node.title}</div>
+          <SenseBar mapId={mapId} />
+          <CardCopy summary={node.summary} light />
+          <ExplainedMark node={node} light />
+          {loading && (
+            <div className="mt-2.5 flex items-center gap-2 text-[12.5px] text-white/60">
+              <Loader2 className="size-3.5 animate-spin" />
+              AI 正在拆解这个知识点…
+            </div>
+          )}
+          <NodeTools node={node} mapId={mapId} hiddenCount={hiddenCount} onPeek={onPeek} onExpand={onExpand} light />
         </div>
-      )}
-      <NodeTools node={node} mapId={mapId} hiddenCount={hiddenCount} onPeek={onPeek} onExpand={onExpand} light />
+        <MasteryRail node={node} mapId={mapId} light />
+      </div>
       <Handles />
     </motion.div>
   );
@@ -320,21 +324,22 @@ function ChildCard({ node, side, selected, onPath, hiddenCount, mapId, onToggle,
         style={{ background: c.stroke, opacity: node.depth === 1 ? 1 : 0.55 }}
       />
 
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2.5">
+        {side === 'left' && <MasteryRail node={node} mapId={mapId} />}
         <div className="min-w-0 flex-1">
           {mine && (
             <div className="mb-1 inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-semibold tracking-wide" style={{ background: c.soft, color: c.text }}>
               我写的
             </div>
           )}
-          <div className="pr-4 text-[14.5px] leading-snug font-semibold text-ink">
+          <div className="text-[14.5px] leading-snug font-semibold text-ink">
             {node.title}
             {node.favorite && <span className="ml-1 inline-block size-1.5 translate-y-[-1px] rounded-full bg-onion" title="已收藏" />}
-            <MasteryDot node={node} />
           </div>
           <CardCopy summary={node.summary} />
           <ExplainedMark node={node} />
         </div>
+        {side === 'right' && <MasteryRail node={node} mapId={mapId} />}
       </div>
 
       {loading ? (

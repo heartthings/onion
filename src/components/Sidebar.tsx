@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { Highlighter, PanelLeftClose, Plus, Search, Settings2, Star, Trash2 } from 'lucide-react';
 import { dueReviews } from '../srs';
 import { useStore } from '../store';
-import { isConfigured, PROVIDERS } from '../ai';
+import { isConfigured, isRealSense, PROVIDERS } from '../ai';
 import { isNarrow, useNarrow } from '../viewport';
 import { GithubLink, IconButton, Logo, ThemeButton } from './ui';
 import { MapThumb } from './MapThumb';
@@ -201,7 +201,7 @@ export function Sidebar() {
                     <MapThumb map={m} />
                   </div>
                   <div className="mt-2 line-clamp-2 pr-6 text-[13px] leading-snug font-medium text-ink">{m.title}</div>
-                  {m.sense && (
+                  {m.sense && isRealSense(m.sense) && (
                     <div className="mt-0.5 truncate text-[11px] text-onion-deep" title={m.sense.gloss}>
                       {m.sense.kind} · {m.sense.gloss}
                     </div>

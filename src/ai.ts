@@ -135,16 +135,20 @@ export interface SenseDraft extends Sense {
   confidence: number;
 }
 
-const SENSE_SYSTEM = `你在判断用户输入的那句话指向哪一个对象。只输出 JSON，不要任何额外文字。
-格式：{"senses":[{"kind":"经济学概念","gloss":"已经花掉、收不回来，还要不要继续","confidence":92}]}
+const SENSE_SYSTEM = `你在判断用户输入的那句话是不是在指不同的东西。只输出 JSON，不要任何额外文字。
+格式：{"senses":[{"kind":"人物","gloss":"网球运动员，2014 年法网冠军","confidence":70}]}
+
+只按一条标准拆：这句话能不能指向上两个互不相干、而且各自真实存在的对象。
+- 要拆：两个同名的人；一部电影和一个生物；一个品牌和一种水果；一本书和一座城市。
+- 不拆：同一个东西的日常说法、口语、书面语、术语、成语、俗称、比喻。那是一种说法，不是另一个东西。
 
 规则：
-1. 按所指拆，不按词性拆。同一个对象的不同说法（词语、成语、短句、术语、俗称）只保留一条。
-2. 把这句话在中文里真实会指向的、互不相同的对象都列出来，最多 4 条。哪怕其中某一个明显更常见，只要它真实存在，也要列出。例如「沉没成本」既是经济学概念，也可以是一部电影，两条都要列。
-3. senses 按 confidence 从高到低排列。confidence 是 0 到 100 的整数，表示用户没写别的限定时、指的是它的可能性。最常见的那一个排第一，即使它很高，其他真实存在的对象也照样列出。
-4. kind 用 2-8 个字，写它是哪一类对象。gloss 不超过 28 个字，让人能认出是哪一个，不要写定义全文。同名的人、地名、作品要写出能区分的特征（职业或身份、年代、代表作之一），格式示例：「网球运动员，某年某赛事冠军」「演员，代表作《某片名》」，具体内容按真实情况写。
-5. 用户已经在输入里点明了所指（例如带了「电影」或「谬误」），只返回那一条，confidence 给 95 以上。
-6. 只列真实存在的对象，不要编造。不要为了凑数把同义词拆开。
+1. 只有一个对象时，senses 只给一条。不要为了凑数再编一种说法。
+2. 最多 4 条，按 confidence 从高到低。confidence 是 0 到 100 的整数，表示没写别的限定时、用户指的是它的可能性。
+3. kind 只能写对象的类型：人物、电影、书籍、歌曲、地点、组织、品牌、物种、事件、学科概念。禁止把这些当 kind：日常说法、口语、书面语、词语、成语、短句、俗称、术语、概念、含义、用法。
+4. gloss 不超过 28 个字，写到让人能认出是哪一个具体对象，不要写定义。同名的人写身份和一件能对上号的事。
+5. 用户已经在输入里点明了所指，只返回那一条。
+6. 只列你确信真实存在的对象。拿不准就不要列。
 7. 使用简体中文。`;
 
 export function sensesNeedChoice(senses: SenseDraft[]): boolean {
@@ -159,6 +163,13 @@ export function senseScope(senses: SenseDraft[], index: number): { sense: Sense;
   if (!chosen) return undefined;
   const alternatives = senses.filter((_, i) => i !== index).map(({ kind, gloss }) => ({ kind, gloss }));
   return { sense: { kind: chosen.kind, gloss: chosen.gloss }, ...(alternatives.length ? { alternatives } : {}) };
+}
+
+/** 说法上的差别，不是另一个对象。模型若把这些当成一种所指，直接丢掉。 */
+const FORM_KIND = /^(日常说法|日常用语|口语|口头说法|口头语|书面语|书面说法|俗称|说法|讲法|词语|词汇|单词|成语|短句|短语|术语|专业术语|概念|名词|表达|用法|含义|意思|比喻|引申|定义|解释)$/;
+
+export function isRealSense(sense: Sense): boolean {
+  return !FORM_KIND.test(sense.kind.trim());
 }
 
 function parseSenses(raw: string): SenseDraft[] {
@@ -179,7 +190,7 @@ function parseSenses(raw: string): SenseDraft[] {
     senses.push({ kind, gloss, confidence });
   }
   senses.sort((a, b) => b.confidence - a.confidence);
-  return senses.slice(0, 4);
+  return senses.filter((item) => !FORM_KIND.test(item.kind)).slice(0, 4);
 }
 
 export async function classifySenses(s: Settings, query: string, signal?: AbortSignal): Promise<SenseDraft[]> {
@@ -399,17 +410,20 @@ function demoQuiz(title: string): QuizQuestion[] {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function demoSenses(query: string): SenseDraft[] {
-  if (query.includes('沉没成本') && /电影/.test(query)) {
-    return [{ kind: '电影', gloss: '一部同名电影', confidence: 96 }];
-  }
-  if (query.includes('沉没成本') && /谬误|经济学|代价/.test(query)) {
-    return [{ kind: '经济学概念', gloss: '已经花掉、收不回来，还要不要继续', confidence: 96 }];
-  }
-  if (query === '沉没成本') {
+  if (query === '李娜') {
     return [
-      { kind: '经济学概念', gloss: '已经花掉、收不回来，还要不要继续', confidence: 86 },
-      { kind: '电影', gloss: '一部同名电影', confidence: 64 },
+      { kind: '人物', gloss: '网球运动员，2014 年法网冠军', confidence: 72 },
+      { kind: '人物', gloss: '流行歌手，代表作《Dream It Possible》', confidence: 60 },
     ];
+  }
+  if (query === '寄生虫') {
+    return [
+      { kind: '电影', gloss: '奉俊昊 2019 年的那部电影', confidence: 74 },
+      { kind: '物种', gloss: '寄居在另一种生物体内的生物', confidence: 68 },
+    ];
+  }
+  if (query.includes('沉没成本') && /电影/.test(query)) {
+    return [{ kind: '电影', gloss: '用户指定按电影来理解', confidence: 96 }];
   }
   return [];
 }

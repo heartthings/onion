@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useReactFlow } from '@xyflow/react';
 import { ChevronsDownUp, ChevronsUpDown, Download, Keyboard, Maximize, PanelLeftOpen } from 'lucide-react';
 import { toast } from 'sonner';
+import { isRealSense } from '../ai';
 import { useStore } from '../store';
 import { downloadText, mapToMarkdown, studyToAnki, studyToMarkdown } from '../exportMarkdown';
 import { GithubLink, IconButton, ThemeButton } from './ui';
@@ -47,7 +48,7 @@ export function CanvasTopBar({ mapId }: { mapId: string }) {
             className="w-full bg-transparent font-serif text-[16px] font-semibold text-ink outline-none sm:w-[min(36vw,360px)]"
           />
           <div className="truncate text-[11.5px] text-faint">
-            {map.sense ? `${map.sense.kind}：${map.sense.gloss} · ` : ''}
+            {map.sense && isRealSense(map.sense) ? `${map.sense.kind}：${map.sense.gloss} · ` : ''}
             {nodes.length} 个知识点 · {depth} 级深度
           </div>
         </div>
