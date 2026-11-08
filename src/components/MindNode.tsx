@@ -210,6 +210,12 @@ function forkSense(map: KMap, next: Sense) {
   void expandNode(mapId, rootId);
 }
 
+/** 种类在锁定的所指和候选里是否重复。重复时（如两个「人物」），只写种类分不清，要写描述。 */
+function kindRepeats(map: KMap, kind: string): boolean {
+  const kinds = [map.sense?.kind, ...(map.alternatives ?? []).map((item) => item.kind)];
+  return kinds.filter((item) => item === kind).length > 1;
+}
+
 function SenseBar({ mapId }: { mapId: string }) {
   const map = useStore((s) => s.maps[mapId]);
   if (!map?.sense && !map?.alternatives?.length) return null;
@@ -217,24 +223,21 @@ function SenseBar({ mapId }: { mapId: string }) {
   return (
     <div className="nodrag nopan mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1" onClick={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()}>
       {map.sense && (
-        <span title={map.sense.gloss} className="rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[12px] text-white/90">
-          {map.sense.kind}
+        <span title={map.sense.gloss} className="max-w-full truncate rounded-full border border-white/25 bg-white/10 px-2 py-0.5 text-[12px] text-white/90">
+          {kindRepeats(map, map.sense.kind) ? map.sense.gloss : map.sense.kind}
         </span>
       )}
-      {others.map((alt) => {
-        const crowded = others.filter((item) => item.kind === alt.kind).length > 1;
-        return (
-          <button
-            key={`${alt.kind}-${alt.gloss}`}
-            type="button"
-            title={alt.gloss}
-            onClick={() => forkSense(map, alt)}
-            className="text-[12px] text-white/70 underline-offset-2 hover:text-white hover:underline"
-          >
-            {crowded ? `换成${alt.kind}：${alt.gloss}` : `换成${alt.kind}`}
-          </button>
-        );
-      })}
+      {others.map((alt) => (
+        <button
+          key={`${alt.kind}-${alt.gloss}`}
+          type="button"
+          title={alt.gloss}
+          onClick={() => forkSense(map, alt)}
+          className="max-w-full truncate text-[12px] text-white/70 underline-offset-2 hover:text-white hover:underline"
+        >
+          {kindRepeats(map, alt.kind) ? `换成：${alt.gloss}` : `换成${alt.kind}`}
+        </button>
+      ))}
     </div>
   );
 }

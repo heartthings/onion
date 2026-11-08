@@ -46,8 +46,8 @@ export function CanvasTopBar({ mapId }: { mapId: string }) {
             onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
             className="w-full bg-transparent font-serif text-[16px] font-semibold text-ink outline-none sm:w-[min(36vw,360px)]"
           />
-          <div className="text-[11.5px] text-faint">
-            {map.sense ? `${map.sense.kind} · ` : ''}
+          <div className="truncate text-[11.5px] text-faint">
+            {map.sense ? `${map.sense.kind}：${map.sense.gloss} · ` : ''}
             {nodes.length} 个知识点 · {depth} 级深度
           </div>
         </div>

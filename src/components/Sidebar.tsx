@@ -201,7 +201,11 @@ export function Sidebar() {
                     <MapThumb map={m} />
                   </div>
                   <div className="mt-2 line-clamp-2 pr-6 text-[13px] leading-snug font-medium text-ink">{m.title}</div>
-                  {m.sense && <div className="mt-0.5 text-[11px] text-onion-deep">{m.sense.kind}</div>}
+                  {m.sense && (
+                    <div className="mt-0.5 truncate text-[11px] text-onion-deep" title={m.sense.gloss}>
+                      {m.sense.kind} · {m.sense.gloss}
+                    </div>
+                  )}
                   <div className="mt-0.5 text-[11px] text-faint">{formatUpdated(m.updatedAt)}</div>
                   <button
                     type="button"
