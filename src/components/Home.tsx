@@ -115,8 +115,8 @@ export function Home() {
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [value]);
 
-  const begin = (topic: string, senses: SenseDraft[], index: number, keepAll = false) => {
-    const { mapId, rootId } = createMap(topic, senseScope(senses, index, keepAll));
+  const begin = (topic: string, senses: SenseDraft[], index: number) => {
+    const { mapId, rootId } = createMap(topic, senseScope(senses, index));
     void expandNode(mapId, rootId);
   };
 
@@ -150,7 +150,7 @@ export function Home() {
     if (!pending) return;
     const next = pending;
     setPending(null);
-    begin(next.query, next.senses, index, true);
+    begin(next.query, next.senses, index);
   };
 
   return (

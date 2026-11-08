@@ -131,9 +131,6 @@ function parseLooseJSON(raw: string): unknown {
 /** 一次拆解最多收下的子节点。界面只先画出其中价值最高的若干个。 */
 export const POOL_SIZE = 12;
 
-/** 低于这条的同名对象不放进「换成」。 */
-const ALT_FLOOR = 40;
-
 export interface SenseDraft extends Sense {
   confidence: number;
 }
@@ -143,11 +140,11 @@ const SENSE_SYSTEM = `你在判断用户输入的那句话指向哪一个对象�
 
 规则：
 1. 按所指拆，不按词性拆。同一个对象的不同说法（词语、成语、短句、术语、俗称）只保留一条。
-2. 只有这句话能指向上两个互不相干的对象时，才给出多条。例如一个经济学概念，和一部同名电影。
-3. senses 按 confidence 从高到低，最多 4 条。confidence 是 0 到 100 的整数，表示用户没写别的限定时、指的是它的可能性。
+2. 把这句话在中文里真实会指向的、互不相同的对象都列出来，最多 4 条。哪怕其中某一个明显更常见，只要它真实存在，也要列出。例如「沉没成本」既是经济学概念，也可以是一部电影，两条都要列。
+3. senses 按 confidence 从高到低排列。confidence 是 0 到 100 的整数，表示用户没写别的限定时、指的是它的可能性。最常见的那一个排第一，即使它很高，其他真实存在的对象也照样列出。
 4. kind 用 2-8 个字，写它是哪一类对象。gloss 不超过 28 个字，让人能认出是哪一个，不要写定义全文。
 5. 用户已经在输入里点明了所指（例如带了「电影」或「谬误」），只返回那一条，confidence 给 95 以上。
-6. 没有把握就只返回最常见的那一条。不要为了凑数把同义词拆开。
+6. 只列真实存在的对象，不要编造。不要为了凑数把同义词拆开。
 7. 使用简体中文。`;
 
 export function sensesNeedChoice(senses: SenseDraft[]): boolean {
@@ -156,13 +153,11 @@ export function sensesNeedChoice(senses: SenseDraft[]): boolean {
   return senses[0].confidence < 75 || gap < 25;
 }
 
-export function senseScope(senses: SenseDraft[], index: number, keepAll = false): { sense: Sense; alternatives?: Sense[] } | undefined {
+/** 锁定 index 指向的所指；其余所指都留在根卡片上，可以「换成」。 */
+export function senseScope(senses: SenseDraft[], index: number): { sense: Sense; alternatives?: Sense[] } | undefined {
   const chosen = senses[index];
   if (!chosen) return undefined;
-  const alternatives = senses
-    .filter((_, i) => i !== index)
-    .filter((item) => keepAll || item.confidence >= ALT_FLOOR)
-    .map(({ kind, gloss }) => ({ kind, gloss }));
+  const alternatives = senses.filter((_, i) => i !== index).map(({ kind, gloss }) => ({ kind, gloss }));
   return { sense: { kind: chosen.kind, gloss: chosen.gloss }, ...(alternatives.length ? { alternatives } : {}) };
 }
 
