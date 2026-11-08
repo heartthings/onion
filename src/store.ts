@@ -346,6 +346,9 @@ export const useStore = create<State>()((set, get) => ({
         reviews = ensureReview(reviews, nodeReview(map, node)).map((card) =>
           card.id === `node:${id}` ? { ...card, dueAt: Date.now() } : card,
         );
+      } else if (mastery === 'got' && !node.favorite) {
+        // 懂了：之前因为「不会」或答错留下的复习卡不再需要，收藏的除外
+        reviews = reviews.filter((card) => card.id !== `node:${id}`);
       }
       return { ...patched, reviews };
     }),
