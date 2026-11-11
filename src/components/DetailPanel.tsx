@@ -8,6 +8,7 @@ import { splitFollowUps } from '../srs';
 import { IconButton } from './ui';
 import { MarkedProse } from './MarkedProse';
 import { QuizBox } from './QuizBox';
+import { ChatBox } from './ChatBox';
 
 type Tab = 'explain' | 'note' | 'quiz';
 
@@ -147,6 +148,7 @@ function PanelBody({ mapId, nodeId }: { mapId: string; nodeId: string }) {
                     </button>
                   )}
                 </div>
+                <ChatBox mapId={mapId} nodeId={nodeId} />
               </>
             ) : streaming ? (
               <div className="flex items-center gap-2 py-6 text-[13px] text-faint">

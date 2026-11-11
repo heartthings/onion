@@ -1,4 +1,4 @@
-import type { ChildDraft, KNode, QuizQuestion, Sense, Settings } from './types';
+import type { ChatTurn, ChildDraft, KNode, QuizQuestion, Sense, Settings } from './types';
 
 export interface ProviderPreset {
   id: string;
@@ -327,6 +327,59 @@ export async function* explainNode(s: Settings, path: KNode[], signal?: AbortSig
     ],
     signal,
   );
+}
+
+const CHAT_SYSTEM = `你在陪一个学习者追问思维导图上的一个知识点。他已经看过你写的「深度解读」，现在对其中某处没看懂，来追问你。
+
+要求：
+1. 直接回答他的问题：先给结论，再解释。不要寒暄，不要复述整份深度解读。
+2. 只围绕当前这个知识点和它紧挨着的边界来答，不要跑题。
+3. 问得具体，就答得具体、可验证；不确定就直说，不要编造。
+4. 可以用公式（行内代码）、对比和短例子。默认 150-350 字，除非用户明确要求更长。
+5. 使用简体中文，专有名词可保留原文。`;
+
+export interface ChatContext {
+  path: KNode[];
+  /** 本次追问之前已经积累的多轮对话 */
+  history: ChatTurn[];
+  /** 当前这一句追问 */
+  question: string;
+  sense?: Sense;
+}
+
+export async function* chatAboutNode(s: Settings, ctx: ChatContext, signal?: AbortSignal): AsyncGenerator<string> {
+  if (!isConfigured(s)) {
+    yield* demoChat(ctx.question);
+    return;
+  }
+  const node = ctx.path[ctx.path.length - 1];
+  const system = [
+    CHAT_SYSTEM,
+    '',
+    '—— 本次对话的背景 ——',
+    `根主题：${ctx.path[0].title}`,
+    senseLine(ctx.sense),
+    `知识路径：${ctx.path.map((n) => n.title).join(' → ')}`,
+    `当前知识点：${node.title}${node.summary ? `（${node.summary}）` : ''}`,
+    node.detail ? `它已有一份深度解读，供你参考、不要整段重复：\n${node.detail}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const messages: Message[] = [
+    { role: 'system', content: system },
+    ...ctx.history.map((turn) => ({ role: turn.role, content: turn.content })),
+    { role: 'user', content: ctx.question },
+  ];
+  yield* chatStream(s, messages, signal);
+}
+
+async function* demoChat(question: string): AsyncGenerator<string> {
+  const text = `这是**演示模式**下的追问回复。配置模型后，这里会针对你问的「${question}」给出真实回答，并记住前面的对话。`;
+  for (let i = 0; i < text.length; i += 6) {
+    await sleep(16);
+    yield text.slice(i, i + 6);
+  }
 }
 
 export async function testConnection(s: Settings): Promise<{ ok: boolean; message: string }> {

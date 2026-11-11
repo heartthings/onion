@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
-import { explainNode, generateChildren } from './ai';
+import { chatAboutNode, explainNode, generateChildren } from './ai';
 import { getPath, useStore } from './store';
+import type { ChatTurn } from './types';
 
 /** 把已经排好序、但收起来的节点再放出一批。 */
 export function openNext(mapId: string, nodeId: string): boolean {
@@ -85,6 +86,47 @@ export async function explain(mapId: string, nodeId: string): Promise<void> {
 
 export function stopExplain() {
   explainAbort?.abort();
+}
+
+let chatAbort: AbortController | null = null;
+
+/** 在深度解读之后继续追问：把问题写入节点，流式地补上 AI 的回答。 */
+export async function askFollowUp(mapId: string, nodeId: string, question: string): Promise<void> {
+  chatAbort?.abort();
+  const controller = new AbortController();
+  chatAbort = controller;
+
+  const st = useStore.getState();
+  const map = st.maps[mapId];
+  const node = map?.nodes[nodeId];
+  if (!map || !node) return;
+
+  const history = node.chat ?? [];
+  const base: ChatTurn[] = [...history, { role: 'user', content: question }];
+  st.updateNode(mapId, nodeId, { chat: [...base, { role: 'assistant', content: '' }] });
+  st.setChatStreaming(nodeId);
+
+  let text = '';
+  try {
+    for await (const chunk of chatAboutNode(st.settings, { path: getPath(map, nodeId), history, question, sense: map.sense }, controller.signal)) {
+      text += chunk;
+      useStore.getState().updateNode(mapId, nodeId, { chat: [...base, { role: 'assistant', content: text }] });
+    }
+  } catch (e) {
+    if ((e as Error).name !== 'AbortError') {
+      toast.error('追问失败', { description: (e as Error).message });
+      useStore.getState().updateNode(mapId, nodeId, { chat: base });
+    }
+  } finally {
+    if (chatAbort === controller) {
+      chatAbort = null;
+      useStore.getState().setChatStreaming(null);
+    }
+  }
+}
+
+export function stopAsk() {
+  chatAbort?.abort();
 }
 
 /** 把讲解末尾的追问变成旁边的一个新节点，并立刻散开。 */

@@ -44,6 +44,7 @@ interface State {
   comparePair: { mapId: string; a: string; b: string } | null;
   focus: FocusRequest | null;
   streamingId: string | null;
+  chatStreamingId: string | null;
   helpOpen: boolean;
   /** 快捷键 N：让详情面板打开「自己写一个节点」 */
   addRequest: { mapId: string; nodeId: string; at: number } | null;
@@ -76,6 +77,7 @@ interface State {
 
   requestFocus: (mapId: string, ids: string[]) => void;
   setStreaming: (id: string | null) => void;
+  setChatStreaming: (id: string | null) => void;
   setHelpOpen: (open: boolean) => void;
   askAddChild: (mapId: string, nodeId: string) => void;
   setSidebarOpen: (open: boolean) => void;
@@ -131,6 +133,7 @@ export const useStore = create<State>()((set, get) => ({
   settingsOpen: false,
   focus: null,
   streamingId: null,
+  chatStreamingId: null,
   helpOpen: false,
   addRequest: null,
   highlights: [],
@@ -417,6 +420,7 @@ export const useStore = create<State>()((set, get) => ({
 
   requestFocus: (mapId, ids) => set({ focus: { mapId, ids, at: Date.now() } }),
   setStreaming: (id) => set({ streamingId: id }),
+  setChatStreaming: (id) => set({ chatStreamingId: id }),
   setHelpOpen: (open) => set({ helpOpen: open }),
   askAddChild: (mapId, nodeId) => set({ addRequest: { mapId, nodeId, at: Date.now() } }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),

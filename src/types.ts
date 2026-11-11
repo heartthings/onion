@@ -16,6 +16,8 @@ export interface KNode {
   error?: string;
   /** 深度讲解（Markdown） */
   detail?: string;
+  /** 深度解读之后，围绕这个点继续追问的多轮对话 */
+  chat?: ChatTurn[];
   note?: string;
   /** 收藏，方便回看 */
   favorite?: boolean;
@@ -111,4 +113,10 @@ export interface ChildDraft {
   value?: number;
   hidden?: boolean;
   origin?: NodeOrigin;
+}
+
+/** 深度解读之后的多轮追问里的一条消息 */
+export interface ChatTurn {
+  role: 'user' | 'assistant';
+  content: string;
 }
