@@ -25,19 +25,21 @@ You can click around before adding a model key. That is demo mode: the nodes are
 
 ## How to study
 
-1. Start with one specific concept. Smaller topics make better maps.
+1. Start with one specific concept. Smaller topics make better maps. If the phrase names more than one real object, pick the sense first; the root card can also switch with "换成…" and open a new map.
 2. The model prepares up to 12 pieces of related information and ranks them by how clearly they mark the boundary. It does not split the topic into "definition, elements, examples". Settings decide how many you see first. The rest sit behind "还有 N 个". Each visible node shows the full summary on the card.
-3. Tap a card to open it. Tap the plus when you want the next layer.
-4. The deep explanation is written only in the side panel. A node that already has one shows "已解读" on its card. Select a sentence in the panel to highlight it. The star saves the node.
-5. The follow-up questions at the end of an explanation are buttons. Tap one and it grows beside the current node, then fans out.
-6. Mark each node **懂了 / 模糊 / 不会** (got it / fuzzy / lost). Fuzzy and lost branches turn amber or rose on the map.
+3. Tap a card to open it. Tap the plus or "散开" when you want the next layer.
+4. The deep explanation is written only in the side panel. A node that already has one shows "已解读" on its card. Select a sentence, release, then tap "划线". The star saves the node. Hover a sidebar highlight or favorite to delete it.
+5. The follow-up questions at the end of an explanation are buttons. Tap one and it grows beside the current node, then fans out. You can also keep chatting after the explanation.
+6. Mark each node **懂了 / 模糊 / 不会** (got it / fuzzy / lost) on the card side. Got it drops today's review card unless the node is favorited; fuzzy is due tomorrow; lost is due now. Fuzzy and lost branches turn amber or rose on the map.
 7. Ask for a few multiple-choice questions on the current node. A wrong answer marks the node as still needing review and drops it into today's queue.
 8. Choose "和另一个对比", then tap a second node, to see what they share and where they split.
-9. Press `N` to write your own node. Yours are blue and labeled "我写的".
+9. Press `N` or "我写" to write your own node. Yours are blue, labeled "我写的", and open a deep explanation by default.
 
 The sidebar has **今天要复习**. Highlights and favorites become cards on a small forgetting curve: forgot it, see it again in 10 minutes; fuzzy, tomorrow; remembered, the gap grows.
 
 Export from the top bar gives you the whole map, a Markdown file of highlights and notes, or a text file Anki can import.
+
+Agent-facing docs live in [`docs/`](docs/). Treat `docs/archive/` as historical only.
 
 ## Shortcuts
 
