@@ -5,7 +5,7 @@
 ## 前提
 
 - 工作目录：`/home/hello/application/green/onion`
-- `git remote` 指向 `https://github.com/heartthings/onion.git`
+- `git remote` 指向 `heartthings/onion`（服务器上已设为 `git@github.com:heartthings/onion.git`）
 - 本机已登录 Cloudflare：`npx wrangler whoami` 能看到 Pages 写权限
 - 本机 `git push` 能推到 `origin`（HTTPS token 或 SSH key）
 

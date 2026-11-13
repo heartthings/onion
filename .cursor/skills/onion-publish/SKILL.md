@@ -30,7 +30,7 @@ cd /home/hello/application/green/onion
    - `git status -sb`  
    - `git diff` / `git diff --staged`  
    - `git log -5 --oneline`  
-   - `git remote -v` 应包含 `https://github.com/heartthings/onion.git`
+   - `git remote -v` 应指向 `heartthings/onion`（本机常用 `git@github.com:heartthings/onion.git`）
 
 2. **对齐文档**  
    若行为有变，先改 `docs/product.md` / `docs/architecture.md` / `docs/data-model.md`，保持与 `src/` 一致。不要把过时内容写回 `docs/archive/` 当现行说明。
@@ -80,6 +80,6 @@ cd /home/hello/application/green/onion
 
 - 生产域名：https://onion.gripe  
 - Pages 项目名：`onion`  
-- 源码 remote：`heartthings/onion`，分支 `main`  
+- 源码 remote：`heartthings/onion`（SSH：`git@github.com:heartthings/onion.git`），分支 `main`  
 - 细则：`docs/publish.md`  
 - 不把 SSH 密码、Cloudflare OAuth、模型 API Key 写进任何文件或提交
